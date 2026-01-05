@@ -20,7 +20,21 @@
 
   <style>
     
+    
     /* =========================
+       Full-bleed iPhone PWA
+       ========================= */
+    html, body{
+      background:#050608;
+      height:100%;
+      margin:0;
+      overscroll-behavior: none;
+    }
+    body{
+      background:#050608;
+      -webkit-overflow-scrolling: touch;
+    }
+/* =========================
        Mobile fullscreen safety
        ========================= */
     html, body{
@@ -1209,6 +1223,96 @@
       .sheetBackdrop.on{ opacity:1; pointer-events:auto; }
     }
 
+
+    /* =========================
+       Phone UI tweaks (requested)
+       ========================= */
+    .fabPlus{ display:none; }
+
+    @media (max-width: 520px) and (orientation: portrait){
+      /* Fullscreen stage, no rounded corners */
+      .app{ padding:0 !important; }
+      .stage{
+        width:100vw !important;
+        height:100dvh !important;
+        border-radius:0 !important;
+      }
+
+      /* Floating + */
+      .fabPlus{
+        display:flex;
+        position: fixed;
+        right: 14px;
+        bottom: calc(84px + env(safe-area-inset-bottom));
+        width: 60px;
+        height: 60px;
+        border-radius: 22px;
+        align-items:center;
+        justify-content:center;
+        border: 1px solid rgba(255,255,255,0.18);
+        background: rgba(255,255,255,0.07);
+        color: rgba(255,255,255,0.92);
+        font-size: 28px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+        z-index: 70;
+        backdrop-filter: blur(14px);
+      }
+      .fabPlus:active{ transform: scale(0.99); }
+
+      /* LIST: only mode selector at top */
+      #view-list .topbar{
+        justify-content:center !important;
+        padding-top: calc(10px + env(safe-area-inset-top)) !important;
+      }
+      #view-list .brand{ display:none !important; }
+      #view-list .actions{
+        width: 100% !important;
+        justify-content:center !important;
+      }
+
+      /* LIST: make list truly full width */
+      #view-list .paperGrid{ grid-template-columns: 1fr !important; }
+      #view-list .paperGrid > .panel{ display:none !important; } /* hide any remaining side panel */
+      #view-list .paperGrid > .paperPanel{ width:100% !important; }
+
+      /* CALENDAR: make calendar full width (hide input panel by default) */
+      #view-calendar .calGrid{ grid-template-columns: 1fr !important; }
+      #view-calendar .calGrid > .panel:nth-child(2){
+        display:none !important; /* input panel hidden */
+      }
+      #view-calendar .calGrid > .panel:nth-child(1){
+        width:100% !important;
+      }
+
+      /* CALENDAR: full-screen add "page" using the existing input panel as overlay */
+      body.cal-add-open #view-calendar .calGrid > .panel:nth-child(2){
+        display:flex !important;
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 80 !important;
+        border-radius: 0 !important;
+        background: rgba(0,0,0,0.86) !important;
+        backdrop-filter: blur(18px);
+      }
+      body.cal-add-open #view-calendar .calGrid > .panel:nth-child(2) .panelBody{
+        padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+      }
+      body.cal-add-open #calFabAdd{ display:none !important; }
+
+      /* CALENDAR: add a close button inside overlay header (we'll show the existing header area) */
+      body.cal-add-open #view-calendar .calGrid > .panel:nth-child(2) .panelHead{
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding-top: calc(12px + env(safe-area-inset-top));
+      }
+
+      /* Keep content away from bottom nav */
+      .panelBody.scrollPad, .paperBody, .timelineBody, .monthGrid{
+        padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+      }
+    }
+
 </style>
 </head>
 <body>
@@ -1366,25 +1470,12 @@
               <div class="paperBody" id="paperList"></div>
             </div>
 
-            <div class="panel">
-              <div class="panelHead">
-                <div class="cap">szabály</div>
-                <div class="h">Kész + naptár sync</div>
-              </div>
-              <div class="panelBody scrollPad">
-                <div class="smallNote">
-                  • Hosszú nyomás (0.55 mp) → kész (áthúzás)<br/>
-                  • A kész feladatok éjfél után eltűnnek<br/>
-                  • A naptár “mai” feladatai automatikusan felmennek a listára (a naptárban választod: váll./magán).
-                </div>
-                <div class="paperLine"></div>
-                <div class="smallNote" id="countNote"></div>
-                <button class="btn" id="btnClearAll" style="margin-top:12px;">Összes törlése (csak ebben a módban)</button>
-              </div>
-            </div>
-          </div>
+            
         </div>
-      </section>
+      
+  <button class="fabPlus" id="listFabAdd" type="button" aria-label="Feladat hozzáadása">＋</button>
+
+</section>
 
       <!-- ADD TASK (LIST DB ONLY) -->
       <section class="view zoom-enter" id="view-add">
@@ -1506,9 +1597,12 @@
             </div>
 
             <div class="panel">
-              <div class="panelHead">
-                <div class="cap">bevitel</div>
-                <div class="h">Naptár-feladat</div>
+              <div class="panelHead" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
+                <div>
+                  <div class="cap">bevitel</div>
+                  <div class="h">Naptár-feladat</div>
+                </div>
+                <button class="btn" id="calAddClose" type="button">Bezár</button>
               </div>
               <div class="panelBody scrollPad" style="padding:14px;">
                 <div class="pillRow">
@@ -1570,7 +1664,10 @@
             </div>
           </div>
         </div>
-      </section>
+      
+  <button class="fabPlus" id="calFabAdd" type="button" aria-label="Naptár feladat hozzáadása">＋</button>
+
+</section>
 
     </div>
   </div>
@@ -2782,6 +2879,21 @@
       }
     });
   })();
+</script>
+
+
+<script>
+  // Phone UX hooks: floating + buttons and calendar add overlay
+  document.addEventListener("DOMContentLoaded", function(){
+    var lf = document.getElementById("listFabAdd");
+    if(lf){ lf.addEventListener("click", function(){ try{ openAddPage(); }catch(e){} }); }
+
+    var cf = document.getElementById("calFabAdd");
+    if(cf){ cf.addEventListener("click", function(){ document.body.classList.add("cal-add-open"); try{ cTitle && cTitle.focus(); }catch(e){} }); }
+
+    var cc = document.getElementById("calAddClose");
+    if(cc){ cc.addEventListener("click", function(){ document.body.classList.remove("cal-add-open"); }); }
+  });
 </script>
 
 <script>
