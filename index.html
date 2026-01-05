@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"/>
   <title>Zsolt adatbázisa</title>
 
 <!-- PWA -->
@@ -14,6 +14,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Zsolt DB">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+<meta name="format-detection" content="telephone=no">
 
   <style>
     :root{
@@ -965,6 +968,59 @@
       color: rgba(255,255,255,0.55);
     }
     .monthTile.current{ border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); }
+  
+    /* =========================
+       iPhone / PWA portrait UX
+       ========================= */
+    @media (max-width: 520px) and (orientation: portrait){
+      body{ overflow:hidden; }
+      .app{ padding:0; }
+      .stage{
+        width:100vw;
+        height:100dvh; /* better on iOS */
+        border-radius: 0;
+      }
+      .view{ padding: 14px; }
+      .topbar{
+        padding: 12px 12px;
+        gap: 10px;
+      }
+      .brandBadge{ width:40px; height:40px; border-radius: 16px; }
+      .brandText .small{ font-size: 11px; }
+      .brandText .big{ font-size: 15px; }
+      .actions{ width:100%; justify-content:flex-start; }
+      .btn{
+        padding: 12px 14px;
+        font-size: 14px;
+        border-radius: 16px;
+      }
+      .seg{ width:100%; }
+      .seg button{ padding: 11px 12px; font-size: 14px; }
+      .paperGrid, .formGrid, .calGrid, .dayViewGrid{
+        grid-template-columns: 1fr !important;
+        padding: 12px !important;
+        gap: 12px !important;
+      }
+      .panelHead{ padding: 12px 12px 10px; }
+      .panelBody{ padding: 12px; }
+      .paperBody{ padding: 14px 14px; }
+      .paperItem{ padding: 12px 12px; }
+      .paperTitle{ font-size: 16px; }
+      .paperMeta{ font-size: 12px; }
+      .addRow{ gap: 10px; }
+      .addFab{ width: 60px; height: 60px; border-radius: 22px; }
+      /* Safe-area padding for notch + home bar */
+      .topbar{ padding-top: calc(12px + env(safe-area-inset-top)); }
+      .panelBody.scrollPad, .paperBody, .timelineBody, .monthGrid{
+        padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+      }
+    }
+
+    /* Allow full safe-area usage */
+    @supports(padding:max(0px)){
+      .stage{ padding-bottom: env(safe-area-inset-bottom); }
+    }
+
   </style>
 </head>
 <body>
@@ -2428,6 +2484,22 @@
     renderCalendarWeek();
     renderSelectedDayTasks();
   </script>
+
+
+<script>
+  // iOS Safari best-effort: if opened in browser (not from Home Screen), try to minimize address bar.
+  // Full "standalone" requires: Megosztás -> Hozzáadás a Főképernyőhöz, majd az ikonról indítsd.
+  (function(){
+    try{
+      var isStandalone = false;
+      if (window.matchMedia) isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      if (!isStandalone && window.navigator && 'standalone' in window.navigator) isStandalone = !!window.navigator.standalone;
+      if(!isStandalone){
+        window.addEventListener('load', function(){ setTimeout(function(){ window.scrollTo(0, 1); }, 50); });
+      }
+    }catch(e){}
+  })();
+</script>
 
 <script>
   if ("serviceWorker" in navigator) {
