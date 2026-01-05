@@ -19,7 +19,20 @@
 <meta name="format-detection" content="telephone=no">
 
   <style>
-    :root{
+    
+    /* =========================
+       Mobile fullscreen safety
+       ========================= */
+    html, body{
+      background: #050608;
+      height: 100%;
+      overscroll-behavior: none;
+    }
+    body{
+      -webkit-overflow-scrolling: touch;
+      margin: 0;
+    }
+:root{
       --bg0:#050608;
       --bg1:#07080b;
       --text: rgba(255,255,255,0.92);
@@ -1021,7 +1034,118 @@
       .stage{ padding-bottom: env(safe-area-inset-bottom); }
     }
 
-  </style>
+  
+    /* =========================
+       Phone-first layout overhaul
+       ========================= */
+    .mnav{ display:none; }
+
+    @media (max-width: 520px) and (orientation: portrait){
+      /* Fullscreen canvas */
+      .stage{
+        width: 100vw !important;
+        height: 100dvh !important; /* better on iOS */
+        border-radius: 0 !important;
+        background: #050608;
+      }
+
+      /* Give content room for bottom nav */
+      .view{ padding: 12px !important; }
+      .paperWrap, .calWrap, .formWrap{ height: 100%; }
+      .paperGrid, .formGrid, .calGrid, .dayViewGrid{
+        grid-template-columns: 1fr !important;
+        padding: 12px !important;
+        gap: 12px !important;
+      }
+
+      /* Mode cards */
+      .cards{ grid-template-columns: 1fr !important; gap: 12px !important; }
+      .card{ padding: 16px !important; border-radius: 22px !important; }
+      .icon{ width: 44px !important; height: 44px !important; border-radius: 16px !important; font-size: 20px !important; }
+      .cardTitle{ font-size: 18px !important; }
+      .cardSub{ font-size: 12px !important; }
+      .enter{ display:none !important; }
+
+      /* Topbar: reduce clutter */
+      .topbar{
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        padding: calc(10px + env(safe-area-inset-top)) 12px 10px !important;
+      }
+      /* Hide secondary buttons (bottom nav handles it) */
+      #btnListBack, #btnListCalendar, #btnListAdd,
+      #btnCalHome, #btnCalToList,
+      #btnAddBack, #btnToCalendarFromAdd{
+        display:none !important;
+      }
+
+      /* Segment full width */
+      .seg{ width: 100% !important; }
+      .seg button{ flex: 1 1 50%; justify-content:center; }
+
+      /* Panels */
+      .panel, .paperPanel{ border-radius: 22px !important; }
+      .panelHead .h{ font-size: 15px !important; }
+      .paperTitle{ font-size: 16px !important; }
+      .paperMeta{ font-size: 11px !important; }
+      .paperDel{ padding: 8px 10px !important; font-size: 10px !important; }
+
+      /* Calendar */
+      .weekWide{ gap: 10px !important; }
+      .dayWide{ min-height: 180px !important; border-radius: 18px !important; }
+      .calTask{ border-radius: 14px !important; padding: 10px !important; }
+      .miniPill{ display:none !important; }
+
+      /* Ensure last item visible + safe area */
+      .panelBody.scrollPad, .paperBody, .timelineBody, .monthGrid{
+        padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+      }
+
+      /* Bottom nav */
+      .mnav{
+        display:flex;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+        gap: 10px;
+        background: rgba(0,0,0,0.55);
+        border-top: 1px solid rgba(255,255,255,0.08);
+        backdrop-filter: blur(16px);
+        z-index: 60;
+      }
+      .mnavBtn{
+        flex: 1 1 0;
+        border: 1px solid rgba(255,255,255,0.10);
+        background: rgba(0,0,0,0.22);
+        color: rgba(255,255,255,0.90);
+        border-radius: 18px;
+        padding: 10px 8px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap: 6px;
+        min-height: 52px;
+      }
+      .mnavBtn:active{ transform: scale(0.99); }
+      .mnavBtn .mico{ font-size: 18px; line-height: 1; }
+      .mnavBtn .mlab{
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.62);
+      }
+      .mnavAdd{
+        border-color: rgba(255,255,255,0.18);
+        background: rgba(255,255,255,0.06);
+      }
+    }
+
+</style>
 </head>
 <body>
   <div class="noise"></div>
@@ -2501,6 +2625,20 @@
   })();
 </script>
 
+
+<script>
+  // Mobile bottom navigation handlers
+  (function(){
+    function $(id){ return document.getElementById(id); }
+    var home = $("mnavHome"), list = $("mnavList"), add = $("mnavAdd"), cal = $("mnavCal");
+    if(!home || !list || !add || !cal) return;
+    home.addEventListener("click", function(){ show("mode"); });
+    list.addEventListener("click", function(){ renderList(); show("list"); });
+    add.addEventListener("click", function(){ openAddPage(); });
+    cal.addEventListener("click", function(){ openCalendar(); });
+  })();
+</script>
+
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
@@ -2508,6 +2646,15 @@
     });
   }
 </script>
+
+
+  <!-- Mobile bottom navigation (portrait) -->
+  <nav class="mnav" id="mnav" aria-label="Alsó navigáció">
+    <button class="mnavBtn" id="mnavHome" type="button"><span class="mico">🏠</span><span class="mlab">Kezdő</span></button>
+    <button class="mnavBtn" id="mnavList" type="button"><span class="mico">🧾</span><span class="mlab">Lista</span></button>
+    <button class="mnavBtn mnavAdd" id="mnavAdd" type="button" aria-label="Új feladat"><span class="mico">＋</span><span class="mlab">Új</span></button>
+    <button class="mnavBtn" id="mnavCal" type="button"><span class="mico">📅</span><span class="mlab">Naptár</span></button>
+  </nav>
 
 </body>
 </html>
