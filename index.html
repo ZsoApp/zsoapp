@@ -1114,7 +1114,8 @@
         background: rgba(0,0,0,0.55);
         border-top: 1px solid rgba(255,255,255,0.08);
         backdrop-filter: blur(16px);
-        z-index: 60;
+        z-index: 9999;
+        pointer-events: auto;
       }
       .mnavBtn{
         flex: 1 1 0;
@@ -1143,6 +1144,69 @@
         border-color: rgba(255,255,255,0.18);
         background: rgba(255,255,255,0.06);
       }
+    }
+
+
+    /* =========================
+       Remove guides/rules panels
+       ========================= */
+    #view-list .paperGrid > .panel{ display:none !important; }
+    #view-add .formGrid > .panel:last-child{ display:none !important; }
+    #view-mode .foot{ display:none !important; }
+
+
+    /* Floating action buttons */
+    .fab{
+      position: fixed;
+      right: 16px;
+      bottom: calc(86px + env(safe-area-inset-bottom));
+      width: 60px;
+      height: 60px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.92);
+      font-size: 28px;
+      line-height: 1;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index: 9998;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+      cursor:pointer;
+    }
+    .fab:active{ transform: scale(0.98); }
+
+
+    /* Calendar add sheet (phone) */
+    #calSidePanel{ }
+    @media (max-width: 520px) and (orientation: portrait){
+      #view-calendar .calGrid{ grid-template-columns: 1fr !important; }
+      #calSidePanel{
+        position: fixed !important;
+        left: 0; right: 0;
+        bottom: 0;
+        height: 72dvh;
+        transform: translateY(110%);
+        transition: transform 260ms var(--ease);
+        z-index: 9000;
+        border-radius: 22px 22px 0 0 !important;
+        margin: 0 !important;
+        box-shadow: 0 -24px 80px rgba(0,0,0,0.55);
+      }
+      #calSidePanel.on{ transform: translateY(0%); }
+      /* Dim backdrop */
+      .sheetBackdrop{
+        position: fixed; inset:0;
+        background: rgba(0,0,0,0.55);
+        backdrop-filter: blur(12px);
+        z-index: 8999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 200ms var(--ease);
+      }
+      .sheetBackdrop.on{ opacity:1; pointer-events:auto; }
     }
 
 </style>
@@ -1340,7 +1404,7 @@
           </div>
 
           <div class="formGrid">
-            <div class="panel">
+            <div class="panel" id="calSidePanel">
               <div class="panelHead">
                 <div class="cap">bevitel</div>
                 <div class="h">Új lista-feladat</div>
@@ -2627,15 +2691,96 @@
 
 
 <script>
-  // Mobile bottom navigation handlers
+  // Mobile bottom navigation handlers (bind after DOM is ready)
+  (function(){
+    function bind(){
+      function $(id){ return document.getElementById(id); }
+      var home = $("mnavHome"), list = $("mnavList"), add = $("mnavAdd"), cal = $("mnavCal");
+      if(!home || !list || !add || !cal) return;
+      home.addEventListener("click", function(){ try{ show("mode"); }catch(e){} });
+      list.addEventListener("click", function(){ try{ renderList(); show("list"); }catch(e){} });
+      add.addEventListener("click", function(){ try{ openAddPage(); }catch(e){} });
+      cal.addEventListener("click", function(){ try{ openCalendar(); }catch(e){} });
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+    else bind();
+  })();
+</script>
+
+<script>
+  // FAB + Calendar sheet wiring
   (function(){
     function $(id){ return document.getElementById(id); }
-    var home = $("mnavHome"), list = $("mnavList"), add = $("mnavAdd"), cal = $("mnavCal");
-    if(!home || !list || !add || !cal) return;
-    home.addEventListener("click", function(){ show("mode"); });
-    list.addEventListener("click", function(){ renderList(); show("list"); });
-    add.addEventListener("click", function(){ openAddPage(); });
-    cal.addEventListener("click", function(){ openCalendar(); });
+    var fabList = $("fabListAdd");
+    var fabCal  = $("fabCalAdd");
+    var calSide = $("calSidePanel");
+    var backdrop = $("sheetBackdrop");
+
+    function isActive(id){
+      var v = document.getElementById(id);
+      return v && v.classList.contains("active");
+    }
+    function refreshFAB(){
+      // show list FAB only on list view
+      if(fabList) fabList.style.display = isActive("view-list") ? "flex" : "none";
+      // show calendar FAB only on calendar view
+      if(fabCal) fabCal.style.display = isActive("view-calendar") ? "flex" : "none";
+    }
+
+    // Hook into view switch by monkey-patching show()
+    if (typeof window.show === "function" && !window.__show_patched){
+      window.__show_patched = true;
+      var _show = window.show;
+      window.show = function(name){
+        _show(name);
+        refreshFAB();
+      };
+      // initial
+      setTimeout(refreshFAB, 0);
+    } else {
+      // fallback polling
+      setInterval(refreshFAB, 300);
+    }
+
+    if(fabList){
+      fabList.addEventListener("click", function(){
+        try{ openAddPage(); }catch(e){}
+      });
+    }
+
+    function closeSheet(){
+      if(calSide) calSide.classList.remove("on");
+      if(backdrop) backdrop.classList.remove("on");
+    }
+    function openSheet(){
+      if(calSide) calSide.classList.add("on");
+      if(backdrop) backdrop.classList.add("on");
+      try{ document.getElementById("cTitle")?.focus(); }catch(e){}
+    }
+
+    if(fabCal){
+      fabCal.addEventListener("click", function(){
+        // Toggle sheet on phone; on desktop just scroll to panel
+        var phone = window.matchMedia && window.matchMedia("(max-width: 520px) and (orientation: portrait)").matches;
+        if(phone) openSheet();
+        else {
+          try{ calSide?.scrollIntoView({behavior:"smooth", block:"start"}); }catch(e){}
+        }
+      });
+    }
+    if(backdrop){
+      backdrop.addEventListener("click", closeSheet);
+    }
+
+    // Close sheet when saving/clearing on phone (optional)
+    document.addEventListener("click", function(e){
+      var t = e.target;
+      if(!t) return;
+      if(t.id === "btnCalAddTask" || t.id === "btnCalClear"){
+        var phone = window.matchMedia && window.matchMedia("(max-width: 520px) and (orientation: portrait)").matches;
+        if(phone) setTimeout(closeSheet, 60);
+      }
+    });
   })();
 </script>
 
@@ -2649,6 +2794,12 @@
 
 
   <!-- Mobile bottom navigation (portrait) -->
+    <div class="sheetBackdrop" id="sheetBackdrop"></div>
+
+  <!-- Floating add buttons -->
+  <button class="fab" id="fabListAdd" type="button" aria-label="Feladat hozzáadása">＋</button>
+  <button class="fab" id="fabCalAdd" type="button" aria-label="Naptár feladat hozzáadása">＋</button>
+
   <nav class="mnav" id="mnav" aria-label="Alsó navigáció">
     <button class="mnavBtn" id="mnavHome" type="button"><span class="mico">🏠</span><span class="mlab">Kezdő</span></button>
     <button class="mnavBtn" id="mnavList" type="button"><span class="mico">🧾</span><span class="mlab">Lista</span></button>
