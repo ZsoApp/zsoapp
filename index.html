@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Zsolt adatbázisa</title>
 
 <!-- PWA -->
@@ -14,25 +14,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Zsolt DB">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
-<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
-<meta name="format-detection" content="telephone=no">
 
   <style>
-    
-    /* =========================
-       Mobile fullscreen safety
-       ========================= */
-    html, body{
-      background: #050608;
-      height: 100%;
-      overscroll-behavior: none;
-    }
-    body{
-      -webkit-overflow-scrolling: touch;
-      margin: 0;
-    }
-:root{
+    :root{
       --bg0:#050608;
       --bg1:#07080b;
       --text: rgba(255,255,255,0.92);
@@ -302,6 +286,33 @@
       color: rgba(255,255,255,0.46);
       user-select:none;
     }
+
+
+    /* Floating + button (mobile friendly) */
+    .fabPlus{
+      position:absolute;
+      right: 18px;
+      bottom: 18px;
+      width: 64px; height: 64px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease);
+      z-index: 25;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .fabPlus:hover{ transform: translateY(-2px); border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.07); }
+    .fabPlus:active{ transform: scale(0.98); }
+    .fabPlus span{ font-family: var(--mono); font-size: 28px; color: rgba(255,255,255,0.90); }
+
+    /* Slide transition for add pages */
+    .view.slide-enter{ transform: translateX(26px); }
+    .view.slide-enter.active{ transform: translateX(0); }
 
     /* Tunnel */
     .tunnel{
@@ -981,235 +992,7 @@
       color: rgba(255,255,255,0.55);
     }
     .monthTile.current{ border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); }
-  
-    /* =========================
-       iPhone / PWA portrait UX
-       ========================= */
-    @media (max-width: 520px) and (orientation: portrait){
-      body{ overflow:hidden; }
-      .app{ padding:0; }
-      .stage{
-        width:100vw;
-        height:100dvh; /* better on iOS */
-        border-radius: 0;
-      }
-      .view{ padding: 14px; }
-      .topbar{
-        padding: 12px 12px;
-        gap: 10px;
-      }
-      .brandBadge{ width:40px; height:40px; border-radius: 16px; }
-      .brandText .small{ font-size: 11px; }
-      .brandText .big{ font-size: 15px; }
-      .actions{ width:100%; justify-content:flex-start; }
-      .btn{
-        padding: 12px 14px;
-        font-size: 14px;
-        border-radius: 16px;
-      }
-      .seg{ width:100%; }
-      .seg button{ padding: 11px 12px; font-size: 14px; }
-      .paperGrid, .formGrid, .calGrid, .dayViewGrid{
-        grid-template-columns: 1fr !important;
-        padding: 12px !important;
-        gap: 12px !important;
-      }
-      .panelHead{ padding: 12px 12px 10px; }
-      .panelBody{ padding: 12px; }
-      .paperBody{ padding: 14px 14px; }
-      .paperItem{ padding: 12px 12px; }
-      .paperTitle{ font-size: 16px; }
-      .paperMeta{ font-size: 12px; }
-      .addRow{ gap: 10px; }
-      .addFab{ width: 60px; height: 60px; border-radius: 22px; }
-      /* Safe-area padding for notch + home bar */
-      .topbar{ padding-top: calc(12px + env(safe-area-inset-top)); }
-      .panelBody.scrollPad, .paperBody, .timelineBody, .monthGrid{
-        padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
-      }
-    }
-
-    /* Allow full safe-area usage */
-    @supports(padding:max(0px)){
-      .stage{ padding-bottom: env(safe-area-inset-bottom); }
-    }
-
-  
-    /* =========================
-       Phone-first layout overhaul
-       ========================= */
-    .mnav{ display:none; }
-
-    @media (max-width: 520px) and (orientation: portrait){
-      /* Fullscreen canvas */
-      .stage{
-        width: 100vw !important;
-        height: 100dvh !important; /* better on iOS */
-        border-radius: 0 !important;
-        background: #050608;
-      }
-
-      /* Give content room for bottom nav */
-      .view{ padding: 12px !important; }
-      .paperWrap, .calWrap, .formWrap{ height: 100%; }
-      .paperGrid, .formGrid, .calGrid, .dayViewGrid{
-        grid-template-columns: 1fr !important;
-        padding: 12px !important;
-        gap: 12px !important;
-      }
-
-      /* Mode cards */
-      .cards{ grid-template-columns: 1fr !important; gap: 12px !important; }
-      .card{ padding: 16px !important; border-radius: 22px !important; }
-      .icon{ width: 44px !important; height: 44px !important; border-radius: 16px !important; font-size: 20px !important; }
-      .cardTitle{ font-size: 18px !important; }
-      .cardSub{ font-size: 12px !important; }
-      .enter{ display:none !important; }
-
-      /* Topbar: reduce clutter */
-      .topbar{
-        position: sticky;
-        top: 0;
-        z-index: 40;
-        padding: calc(10px + env(safe-area-inset-top)) 12px 10px !important;
-      }
-      /* Hide secondary buttons (bottom nav handles it) */
-      #btnListBack, #btnListCalendar, #btnListAdd,
-      #btnCalHome, #btnCalToList,
-      #btnAddBack, #btnToCalendarFromAdd{
-        display:none !important;
-      }
-
-      /* Segment full width */
-      .seg{ width: 100% !important; }
-      .seg button{ flex: 1 1 50%; justify-content:center; }
-
-      /* Panels */
-      .panel, .paperPanel{ border-radius: 22px !important; }
-      .panelHead .h{ font-size: 15px !important; }
-      .paperTitle{ font-size: 16px !important; }
-      .paperMeta{ font-size: 11px !important; }
-      .paperDel{ padding: 8px 10px !important; font-size: 10px !important; }
-
-      /* Calendar */
-      .weekWide{ gap: 10px !important; }
-      .dayWide{ min-height: 180px !important; border-radius: 18px !important; }
-      .calTask{ border-radius: 14px !important; padding: 10px !important; }
-      .miniPill{ display:none !important; }
-
-      /* Ensure last item visible + safe area */
-      .panelBody.scrollPad, .paperBody, .timelineBody, .monthGrid{
-        padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
-      }
-
-      /* Bottom nav */
-      .mnav{
-        display:flex;
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-        gap: 10px;
-        background: rgba(0,0,0,0.55);
-        border-top: 1px solid rgba(255,255,255,0.08);
-        backdrop-filter: blur(16px);
-        z-index: 9999;
-        pointer-events: auto;
-      }
-      .mnavBtn{
-        flex: 1 1 0;
-        border: 1px solid rgba(255,255,255,0.10);
-        background: rgba(0,0,0,0.22);
-        color: rgba(255,255,255,0.90);
-        border-radius: 18px;
-        padding: 10px 8px;
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        justify-content:center;
-        gap: 6px;
-        min-height: 52px;
-      }
-      .mnavBtn:active{ transform: scale(0.99); }
-      .mnavBtn .mico{ font-size: 18px; line-height: 1; }
-      .mnavBtn .mlab{
-        font-family: var(--mono);
-        font-size: 10px;
-        letter-spacing: .18em;
-        text-transform: uppercase;
-        color: rgba(255,255,255,0.62);
-      }
-      .mnavAdd{
-        border-color: rgba(255,255,255,0.18);
-        background: rgba(255,255,255,0.06);
-      }
-    }
-
-
-    /* =========================
-       Remove guides/rules panels
-       ========================= */
-    #view-list .paperGrid > .panel{ display:none !important; }
-    #view-add .formGrid > .panel:last-child{ display:none !important; }
-    #view-mode .foot{ display:none !important; }
-
-
-    /* Floating action buttons */
-    .fab{
-      position: fixed;
-      right: 16px;
-      bottom: calc(86px + env(safe-area-inset-bottom));
-      width: 60px;
-      height: 60px;
-      border-radius: 22px;
-      border: 1px solid rgba(255,255,255,0.16);
-      background: rgba(255,255,255,0.07);
-      color: rgba(255,255,255,0.92);
-      font-size: 28px;
-      line-height: 1;
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index: 9998;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 18px 50px rgba(0,0,0,0.45);
-      cursor:pointer;
-    }
-    .fab:active{ transform: scale(0.98); }
-
-
-    /* Calendar add sheet (phone) */
-    #calSidePanel{ }
-    @media (max-width: 520px) and (orientation: portrait){
-      #view-calendar .calGrid{ grid-template-columns: 1fr !important; }
-      #calSidePanel{
-        position: fixed !important;
-        left: 0; right: 0;
-        bottom: 0;
-        height: 72dvh;
-        transform: translateY(110%);
-        transition: transform 260ms var(--ease);
-        z-index: 9000;
-        border-radius: 22px 22px 0 0 !important;
-        margin: 0 !important;
-        box-shadow: 0 -24px 80px rgba(0,0,0,0.55);
-      }
-      #calSidePanel.on{ transform: translateY(0%); }
-      /* Dim backdrop */
-      .sheetBackdrop{
-        position: fixed; inset:0;
-        background: rgba(0,0,0,0.55);
-        backdrop-filter: blur(12px);
-        z-index: 8999;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 200ms var(--ease);
-      }
-      .sheetBackdrop.on{ opacity:1; pointer-events:auto; }
-    }
-
-</style>
+  </style>
 </head>
 <body>
   <div class="noise"></div>
@@ -1351,43 +1134,30 @@
                 <button id="segPersonal"><span>🌿</span><span>Magán</span></button>
               </div>
 
-              <button class="btn" id="btnListAdd">＋ Feladat</button>
               <button class="btn" id="btnListCalendar">Naptár</button>
               <button class="btn" id="btnListBack">Kezdőlap</button>
             </div>
           </div>
 
-          <div class="paperGrid">
+          <div class="paperGrid" style="grid-template-columns: 1fr;">
             <div class="paperPanel">
               <div class="panelHead">
                 <div class="cap">lista</div>
                 <div class="h">Feladatok (prioritás szerint)</div>
               </div>
-              <div class="paperBody" id="paperList"></div>
-            </div>
-
-            <div class="panel">
-              <div class="panelHead">
-                <div class="cap">szabály</div>
-                <div class="h">Kész + naptár sync</div>
-              </div>
-              <div class="panelBody scrollPad">
-                <div class="smallNote">
-                  • Hosszú nyomás (0.55 mp) → kész (áthúzás)<br/>
-                  • A kész feladatok éjfél után eltűnnek<br/>
-                  • A naptár “mai” feladatai automatikusan felmennek a listára (a naptárban választod: váll./magán).
-                </div>
-                <div class="paperLine"></div>
-                <div class="smallNote" id="countNote"></div>
-                <button class="btn" id="btnClearAll" style="margin-top:12px;">Összes törlése (csak ebben a módban)</button>
-              </div>
+              <div class="paperBody scrollPad" id="paperList"></div>
             </div>
           </div>
+
+          <!-- + (átúszás a feladat hozzáadásához) -->
+          <button class="fabPlus" id="fabListAdd" aria-label="Új feladat hozzáadása">
+            <span>＋</span>
+          </button>
         </div>
       </section>
 
       <!-- ADD TASK (LIST DB ONLY) -->
-      <section class="view zoom-enter" id="view-add">
+      <section class="view slide-enter" id="view-add">
         <div class="formWrap">
           <div class="topbar" style="border-bottom:1px solid rgba(255,255,255,0.08); border-radius: 26px;">
             <div class="brand">
@@ -1404,7 +1174,7 @@
           </div>
 
           <div class="formGrid">
-            <div class="panel" id="calSidePanel">
+            <div class="panel">
               <div class="panelHead">
                 <div class="cap">bevitel</div>
                 <div class="h">Új lista-feladat</div>
@@ -1465,50 +1235,28 @@
           </div>
         </div>
       </section>
-
-      <!-- CALENDAR VIEW -->
-      <section class="view" id="view-calendar">
-        <div class="calWrap">
-          <div class="topbar">
+      <!-- ADD TASK (CALENDAR DB ONLY) -->
+      <section class="view slide-enter" id="view-cal-add">
+        <div class="formWrap">
+          <div class="topbar" style="border-bottom:1px solid rgba(255,255,255,0.08); border-radius: 26px;">
             <div class="brand">
               <div class="brandBadge">📅</div>
               <div class="brandText">
                 <div class="small">Zsolt adatbázisa</div>
-                <div class="big" id="calTitle">Naptár</div>
+                <div class="big">Feladat hozzáadása (naptár)</div>
               </div>
             </div>
             <div class="actions">
-              <button class="btn" id="btnCalToList">Lista</button>
-              <button class="btn" id="btnCalHome">Kezdőlap</button>
+              <button class="btn" id="btnCalAddBack">Vissza</button>
+              <button class="btn" id="btnCalAddToList">Lista</button>
             </div>
           </div>
 
-          <div class="calGrid">
-            <div class="panel">
-              <div class="panelHead" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
-                <div>
-                  <div class="cap">naptár</div>
-                  <div class="h" id="calWeekLabel">Heti nézet</div>
-                </div>
-                <div class="actions" style="gap:8px;">
-                  <button class="btn" id="btnPrevWeek">◀</button>
-                  <button class="btn" id="btnTodayMonth">Ma</button>
-                  <button class="btn" id="btnNextWeek">▶</button>
-                </div>
-              </div>
-
-              <div class="panelBody scrollPad">
-                <div class="weekStack">
-                  <div class="rangeLayer" id="rangeLayer"></div>
-                  <div class="weekWide" id="weekWide"></div>
-                </div>
-              </div>
-            </div>
-
+          <div class="formGrid" style="grid-template-columns: 1fr;">
             <div class="panel">
               <div class="panelHead">
                 <div class="cap">bevitel</div>
-                <div class="h">Naptár-feladat</div>
+                <div class="h">Új naptár-feladat</div>
               </div>
               <div class="panelBody scrollPad" style="padding:14px;">
                 <div class="pillRow">
@@ -1523,7 +1271,7 @@
 
                 <div class="row2">
                   <div class="field">
-                    <label for="cTime">Idő (rendezés)</label>
+                    <label for="cTime">Idő (opcionális)</label>
                     <input id="cTime" type="time" />
                   </div>
                   <div class="field">
@@ -1572,7 +1320,53 @@
         </div>
       </section>
 
-    </div>
+
+      <!-- CALENDAR VIEW -->
+      <section class="view" id="view-calendar">
+        <div class="calWrap">
+          <div class="topbar">
+            <div class="brand">
+              <div class="brandBadge">📅</div>
+              <div class="brandText">
+                <div class="small">Zsolt adatbázisa</div>
+                <div class="big" id="calTitle">Naptár</div>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn" id="btnCalToList">Lista</button>
+              <button class="btn" id="btnCalHome">Kezdőlap</button>
+            </div>
+          </div>
+
+          <div class="calGrid" style="grid-template-columns: 1fr;">
+            <div class="panel">
+              <div class="panelHead" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
+                <div>
+                  <div class="cap">naptár</div>
+                  <div class="h" id="calWeekLabel">Heti nézet</div>
+                </div>
+                <div class="actions" style="gap:8px;">
+                  <button class="btn" id="btnPrevWeek">◀</button>
+                  <button class="btn" id="btnTodayMonth">Ma</button>
+                  <button class="btn" id="btnNextWeek">▶</button>
+                </div>
+              </div>
+
+              <div class="panelBody scrollPad">
+                <div class="weekStack">
+                  <div class="rangeLayer" id="rangeLayer"></div>
+                  <div class="weekWide" id="weekWide"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- + (átúszás az új naptár-feladathoz) -->
+          <button class="fabPlus" id="fabCalAdd" aria-label="Új naptár-feladat hozzáadása">
+            <span>＋</span>
+          </button>
+        </div>
+      </section></div>
   </div>
 
   <script>
@@ -1585,6 +1379,7 @@
       list: document.getElementById("view-list"),
       add: document.getElementById("view-add"),
       calendar: document.getElementById("view-calendar"),
+      "cal-add": document.getElementById("view-cal-add"),
     };
     function show(name){
       Object.values(views).forEach(v => v.classList.remove("active"));
@@ -1873,6 +1668,32 @@
       show("add");
       setTimeout(()=> tTitle.focus(), 120);
     }
+    // -------------------------
+    // CAL ADD PAGE (separate)
+    // -------------------------
+    function openCalAddPage(originEl){
+      if(originEl) setTunnelOriginFromEl(originEl);
+      else { tunnel.style.setProperty("--x","50%"); tunnel.style.setProperty("--y","50%"); }
+
+      tunnel.classList.add("on");
+      setTimeout(() => {
+        tunnel.classList.remove("on");
+        // defaults
+        calAddMode = currentMode || "personal";
+        renderCalToggle();
+        rangeOn = false;
+        multiPanel.style.display = "none";
+        btnMultiToggle.textContent = "📆 Több nap";
+        selectedDate = selectedDate || todayYMD();
+        cDate.value = selectedDate;
+        cFrom.value = selectedDate;
+        cTo.value = selectedDate;
+        renderSelectedDayTasks();
+        show("cal-add");
+        setTimeout(()=> cTitle.focus(), 140);
+      }, 360);
+    }
+
     function addListTask(){
       const title = (tTitle.value || "").trim();
       if(!title){
@@ -2323,8 +2144,7 @@
         day.addEventListener("click", () => {
           selectedDate = ymd;
           renderCalendarWeek();
-          renderSelectedDayTasks();
-          setTimeout(()=> cTitle.focus(), 120);
+          openDayView(ymd);
         });
 
         day.addEventListener("dblclick", (e)=> { e.stopPropagation(); openDayView(ymd); });
@@ -2343,14 +2163,8 @@
     function openCalendar(){
       selectedDate = todayYMD();
       calWeekStart = mondayStart(new Date());
-      rangeOn = false;
-      multiPanel.style.display = "none";
-      btnMultiToggle.textContent = "📆 Több nap";
-      cDate.value = selectedDate;
       renderCalendarWeek();
-      renderSelectedDayTasks();
       show("calendar");
-      setTimeout(()=> cTitle.focus(), 150);
     }
 
     function clearCalForm(){
@@ -2430,11 +2244,10 @@
       cTitle.focus();
     }
 
-    btnCalAddTask.addEventListener("click", addCalendarEvent);
-    cTitle.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addCalendarEvent(); } });
-    cTime.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addCalendarEvent(); } });
-
-    cDate.addEventListener("change", () => {
+    btnCalAddTask.addEventListener("click", ()=>{ addCalendarEvent(); openCalendar(); });
+    cTitle.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addCalendarEvent(); openCalendar(); } });
+    cTime.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addCalendarEvent(); openCalendar(); } });
+cDate.addEventListener("change", () => {
       if(cDate.value){
         selectedDate = cDate.value;
         renderCalendarWeek();
@@ -2652,14 +2465,17 @@
       tunnel.classList.add("on");
       setTimeout(() => { tunnel.classList.remove("on"); openAddPage(); }, 360);
     });
-    document.getElementById("btnListAdd").addEventListener("click", (e)=> diveToAdd(e.currentTarget));
-
-    document.getElementById("btnListCalendar").addEventListener("click", openCalendar);
+    document.getElementById("fabListAdd").addEventListener("click", (e)=> diveToAdd(e.currentTarget));
+document.getElementById("btnListCalendar").addEventListener("click", openCalendar);
     document.getElementById("btnCalToList").addEventListener("click", ()=> { renderList(); show("list"); });
+
+    document.getElementById("btnCalAddBack").addEventListener("click", openCalendar);
+    document.getElementById("btnCalAddToList").addEventListener("click", ()=> { renderList(); show("list"); });
 
     document.getElementById("btnOpenCalendar").addEventListener("click", openCalendar);
 
-    document.getElementById("btnAddBack").addEventListener("click", ()=> { renderList(); show("list"); });
+    document.getElementById("fabCalAdd").addEventListener("click", (e)=> openCalAddPage(e.currentTarget));
+document.getElementById("btnAddBack").addEventListener("click", ()=> { renderList(); show("list"); });
     document.getElementById("btnToCalendarFromAdd").addEventListener("click", openCalendar);
 
     segBusiness.addEventListener("click", ()=> enterMode("business"));
@@ -2673,117 +2489,6 @@
     renderSelectedDayTasks();
   </script>
 
-
-<script>
-  // iOS Safari best-effort: if opened in browser (not from Home Screen), try to minimize address bar.
-  // Full "standalone" requires: Megosztás -> Hozzáadás a Főképernyőhöz, majd az ikonról indítsd.
-  (function(){
-    try{
-      var isStandalone = false;
-      if (window.matchMedia) isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      if (!isStandalone && window.navigator && 'standalone' in window.navigator) isStandalone = !!window.navigator.standalone;
-      if(!isStandalone){
-        window.addEventListener('load', function(){ setTimeout(function(){ window.scrollTo(0, 1); }, 50); });
-      }
-    }catch(e){}
-  })();
-</script>
-
-
-<script>
-  // Mobile bottom navigation handlers (bind after DOM is ready)
-  (function(){
-    function bind(){
-      function $(id){ return document.getElementById(id); }
-      var home = $("mnavHome"), list = $("mnavList"), add = $("mnavAdd"), cal = $("mnavCal");
-      if(!home || !list || !add || !cal) return;
-      home.addEventListener("click", function(){ try{ show("mode"); }catch(e){} });
-      list.addEventListener("click", function(){ try{ renderList(); show("list"); }catch(e){} });
-      add.addEventListener("click", function(){ try{ openAddPage(); }catch(e){} });
-      cal.addEventListener("click", function(){ try{ openCalendar(); }catch(e){} });
-    }
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
-    else bind();
-  })();
-</script>
-
-<script>
-  // FAB + Calendar sheet wiring
-  (function(){
-    function $(id){ return document.getElementById(id); }
-    var fabList = $("fabListAdd");
-    var fabCal  = $("fabCalAdd");
-    var calSide = $("calSidePanel");
-    var backdrop = $("sheetBackdrop");
-
-    function isActive(id){
-      var v = document.getElementById(id);
-      return v && v.classList.contains("active");
-    }
-    function refreshFAB(){
-      // show list FAB only on list view
-      if(fabList) fabList.style.display = isActive("view-list") ? "flex" : "none";
-      // show calendar FAB only on calendar view
-      if(fabCal) fabCal.style.display = isActive("view-calendar") ? "flex" : "none";
-    }
-
-    // Hook into view switch by monkey-patching show()
-    if (typeof window.show === "function" && !window.__show_patched){
-      window.__show_patched = true;
-      var _show = window.show;
-      window.show = function(name){
-        _show(name);
-        refreshFAB();
-      };
-      // initial
-      setTimeout(refreshFAB, 0);
-    } else {
-      // fallback polling
-      setInterval(refreshFAB, 300);
-    }
-
-    if(fabList){
-      fabList.addEventListener("click", function(){
-        try{ openAddPage(); }catch(e){}
-      });
-    }
-
-    function closeSheet(){
-      if(calSide) calSide.classList.remove("on");
-      if(backdrop) backdrop.classList.remove("on");
-    }
-    function openSheet(){
-      if(calSide) calSide.classList.add("on");
-      if(backdrop) backdrop.classList.add("on");
-      try{ document.getElementById("cTitle")?.focus(); }catch(e){}
-    }
-
-    if(fabCal){
-      fabCal.addEventListener("click", function(){
-        // Toggle sheet on phone; on desktop just scroll to panel
-        var phone = window.matchMedia && window.matchMedia("(max-width: 520px) and (orientation: portrait)").matches;
-        if(phone) openSheet();
-        else {
-          try{ calSide?.scrollIntoView({behavior:"smooth", block:"start"}); }catch(e){}
-        }
-      });
-    }
-    if(backdrop){
-      backdrop.addEventListener("click", closeSheet);
-    }
-
-    // Close sheet when saving/clearing on phone (optional)
-    document.addEventListener("click", function(e){
-      var t = e.target;
-      if(!t) return;
-      if(t.id === "btnCalAddTask" || t.id === "btnCalClear"){
-        var phone = window.matchMedia && window.matchMedia("(max-width: 520px) and (orientation: portrait)").matches;
-        if(phone) setTimeout(closeSheet, 60);
-      }
-    });
-  })();
-</script>
-
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
@@ -2791,21 +2496,6 @@
     });
   }
 </script>
-
-
-  <!-- Mobile bottom navigation (portrait) -->
-    <div class="sheetBackdrop" id="sheetBackdrop"></div>
-
-  <!-- Floating add buttons -->
-  <button class="fab" id="fabListAdd" type="button" aria-label="Feladat hozzáadása">＋</button>
-  <button class="fab" id="fabCalAdd" type="button" aria-label="Naptár feladat hozzáadása">＋</button>
-
-  <nav class="mnav" id="mnav" aria-label="Alsó navigáció">
-    <button class="mnavBtn" id="mnavHome" type="button"><span class="mico">🏠</span><span class="mlab">Kezdő</span></button>
-    <button class="mnavBtn" id="mnavList" type="button"><span class="mico">🧾</span><span class="mlab">Lista</span></button>
-    <button class="mnavBtn mnavAdd" id="mnavAdd" type="button" aria-label="Új feladat"><span class="mico">＋</span><span class="mlab">Új</span></button>
-    <button class="mnavBtn" id="mnavCal" type="button"><span class="mico">📅</span><span class="mlab">Naptár</span></button>
-  </nav>
 
 </body>
 </html>
