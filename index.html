@@ -1095,6 +1095,45 @@
       }
     }
 
+
+    /* =========================
+       Swoosh transition overlay
+       ========================= */
+    #swoosh{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10000;
+      opacity: 0;
+      background: radial-gradient(circle at var(--sx, 50%) var(--sy, 50%),
+        rgba(255,255,255,0.10) 0%,
+        rgba(255,255,255,0.06) 18%,
+        rgba(0,0,0,0.0) 38%),
+        rgba(0,0,0,0);
+      transform: scale(1);
+    }
+    #swoosh.on{
+      opacity: 1;
+      animation: swooshPop 360ms var(--ease) both;
+      background: radial-gradient(circle at var(--sx, 50%) var(--sy, 50%),
+        rgba(255,255,255,0.12) 0%,
+        rgba(255,255,255,0.08) 22%,
+        rgba(5,6,8,1) 55%,
+        rgba(5,6,8,1) 100%);
+    }
+    @keyframes swooshPop{
+      0%{ transform: scale(0.85); }
+      100%{ transform: scale(1.0); }
+    }
+
+    /* Lista: felül csak a váltó legyen */
+    #view-list .topbar{ justify-content:center; }
+    #view-list .brand{ display:none !important; }
+    #view-list .actions{ width:100%; justify-content:center; }
+    #view-list #btnListAdd,
+    #view-list #btnListCalendar,
+    #view-list #btnListBack{ display:none !important; }
+
 </style>
 </head>
 <body>
@@ -1291,6 +1330,29 @@
           </div>
 
           <div class="formGrid">
+            
+          </div>
+        </div>
+      </section>
+
+      <!-- CALENDAR VIEW -->
+      
+      <section class="view" id="view-caladd">
+        <div class="calWrap">
+          <div class="topbar">
+            <div class="brand">
+              <div class="brandBadge">➕</div>
+              <div class="brandText">
+                <div class="small">Zsolt adatbázisa</div>
+                <div class="big">Naptár feladat</div>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn" id="btnCalAddBack">Vissza</button>
+            </div>
+          </div>
+
+          <div class="calGrid" style="grid-template-columns: 1fr;">
             <div class="panel">
               <div class="panelHead">
                 <div class="cap">bevitel</div>
@@ -1353,8 +1415,7 @@
         </div>
       </section>
 
-      <!-- CALENDAR VIEW -->
-      <section class="view" id="view-calendar">
+<section class="view" id="view-calendar">
         <div class="calWrap">
           <div class="topbar">
             <div class="brand">
@@ -1370,7 +1431,7 @@
             </div>
           </div>
 
-          <div class="calGrid">
+          <div class="calGrid" style="grid-template-columns: 1fr;">
             <div class="panel">
               <div class="panelHead" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
                 <div>
@@ -1472,6 +1533,7 @@
       list: document.getElementById("view-list"),
       add: document.getElementById("view-add"),
       calendar: document.getElementById("view-calendar"),
+      caladd: document.getElementById("view-caladd"),
     };
     function show(name){
       Object.values(views).forEach(v => v.classList.remove("active"));
@@ -2630,6 +2692,34 @@
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
     else bind();
+  })();
+</script>
+
+
+<script>
+  // View navigation with "átúszás" (swoosh) effect
+  (function(){
+    const swoosh = document.getElementById("swoosh");
+    function centerFrom(el){
+      if(!el) return {x: 50, y: 50};
+      const r = el.getBoundingClientRect();
+      const x = ((r.left + r.width/2) / window.innerWidth) * 100;
+      const y = ((r.top + r.height/2) / window.innerHeight) * 100;
+      return {x, y};
+    }
+    window.go = function(viewName, fromEl){
+      try{
+        if(!swoosh || typeof show !== "function") { show(viewName); return; }
+        const c = centerFrom(fromEl);
+        swoosh.style.setProperty("--sx", c.x + "%");
+        swoosh.style.setProperty("--sy", c.y + "%");
+        swoosh.classList.add("on");
+        setTimeout(() => { try{ show(viewName); }catch(e){} }, 150);
+        setTimeout(() => { swoosh.classList.remove("on"); }, 360);
+      }catch(e){
+        try{ show(viewName); }catch(_){}
+      }
+    };
   })();
 </script>
 
