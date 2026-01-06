@@ -2,20 +2,20 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"/>
   <title>Zsolt adatbázisa</title>
 
-<!-- PWA -->
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#050608">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#050608">
 
-<!-- iOS PWA -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Zsolt DB">
-<link rel="apple-touch-icon" href="icon-192.png">
-
-  <style>
+  
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ZsoApp">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="format-detection" content="telephone=no">
+<style>
     :root{
       --bg0:#050608;
       --bg1:#07080b;
@@ -286,33 +286,6 @@
       color: rgba(255,255,255,0.46);
       user-select:none;
     }
-
-
-    /* Floating + button (mobile friendly) */
-    .fabPlus{
-      position:absolute;
-      right: 18px;
-      bottom: 18px;
-      width: 64px; height: 64px;
-      border-radius: 22px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.06);
-      backdrop-filter: blur(14px);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
-      display:flex; align-items:center; justify-content:center;
-      cursor:pointer;
-      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease);
-      z-index: 25;
-      user-select:none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .fabPlus:hover{ transform: translateY(-2px); border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.07); }
-    .fabPlus:active{ transform: scale(0.98); }
-    .fabPlus span{ font-family: var(--mono); font-size: 28px; color: rgba(255,255,255,0.90); }
-
-    /* Slide transition for add pages */
-    .view.slide-enter{ transform: translateX(26px); }
-    .view.slide-enter.active{ transform: translateX(0); }
 
     /* Tunnel */
     .tunnel{
@@ -992,6 +965,83 @@
       color: rgba(255,255,255,0.55);
     }
     .monthTile.current{ border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); }
+  
+    /* =========================
+       Phone-first layout tweaks
+       ========================= */
+    html, body{ background:#050608; height:100%; overscroll-behavior:none; }
+    body{ margin:0; -webkit-overflow-scrolling:touch; }
+
+    /* List: full width */
+    .paperGrid{ grid-template-columns: 1fr !important; }
+
+    /* Calendar: full width */
+    .calGrid{ grid-template-columns: 1fr !important; }
+
+    /* Transition to Add page */
+    .add-pulse{ animation: addPulse .22s ease-out; }
+    @keyframes addPulse{ from{ transform: scale(1); } to{ transform: scale(0.96); } }
+    body.add-swipe .stage{ transform: translateY(6px) scale(0.99); filter: saturate(1.05); }
+
+    /* Mobile bottom nav */
+    .mnav{ display:none; }
+    @media (max-width: 520px) and (orientation: portrait){
+      .stage{ width:100vw; height:100dvh; border-radius:0 !important; }
+      .view{ padding: 12px !important; }
+      .topbar{ padding-top: calc(10px + env(safe-area-inset-top)) !important; }
+      .mnav{
+        display:flex;
+        position: fixed;
+        left: 0; right:0; bottom:0;
+        padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+        gap: 10px;
+        background: rgba(0,0,0,0.55);
+        border-top: 1px solid rgba(255,255,255,0.08);
+        backdrop-filter: blur(16px);
+        z-index: 9999;
+      }
+      .mnavBtn{
+        flex: 1 1 0;
+        border: 1px solid rgba(255,255,255,0.10);
+        background: rgba(0,0,0,0.22);
+        color: rgba(255,255,255,0.90);
+        border-radius: 18px;
+        padding: 10px 8px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap: 6px;
+        min-height: 52px;
+      }
+      .mnavBtn .mico{ font-size: 18px; line-height: 1; }
+      .mnavBtn .mlab{
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.62);
+      }
+      .mnavAdd{ background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.18); }
+      /* Give content room for nav */
+      .paperBody, .panelBody, .monthGrid, .timelineBody{
+        padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+      }
+    }
+
+    /* Plus icon buttons in headers */
+    .btnPlus{
+      width: 44px;
+      height: 44px;
+      border-radius: 18px;
+      padding: 0;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 22px;
+      line-height: 1;
+    }
+
   </style>
 </head>
 <body>
@@ -1027,137 +1077,11 @@
                 <div class="taskBlocks" id="taskBlocks"></div>
               </div>
             </div>
-
-            <div class="panel">
-              <div class="panelHead">
-                <div class="cap">feladatok</div>
-                <div class="h">Aznapi lista (idő szerint)</div>
-              </div>
-              <div class="panelBody scrollPad" id="dayTaskList"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="overlay" id="overlayMonths">
-        <div class="overlayCard">
-          <div class="topbar">
-            <div class="brand">
-              <div class="brandBadge">🧭</div>
-              <div class="brandText">
-                <div class="small">Naptár</div>
-                <div class="big">Hónapválasztó</div>
-              </div>
-            </div>
-            <div class="actions">
-              <button class="btn" id="btnMonthsClose">Bezár</button>
-            </div>
-          </div>
-          <div class="monthGrid" id="monthGrid"></div>
-        </div>
-      </div>
-
-      <!-- SPLASH -->
-      <section class="view active" id="view-splash">
-        <div class="splashWrap">
-          <div class="kicker splashEnter">offline • local • private</div>
-          <h1 class="title splashEnter" style="animation-delay: 80ms;">Zsolt adatbázisa</h1>
-          <div class="bar" aria-hidden="true"><i></i></div>
-        </div>
-      </section>
-
-      <!-- MODE SELECT -->
-      <section class="view" id="view-mode">
-        <div class="modeWrap">
-          <div class="centerHead">
-            <div class="small">válassz területet</div>
-            <div class="big">Melyik módba lépsz be?</div>
-          </div>
-
-          <div class="cards">
-            <div class="card" role="button" tabindex="0" data-mode="business">
-              <div class="cardTop">
-                <div class="icon">💼</div>
-                <div>
-                  <p class="cardTitle">Vállalkozás</p>
-                  <div class="cardSub">lista prioritás szerint, határidőkkel</div>
-                  <div class="divider"></div>
-                  <div class="enter">Enter</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="card" role="button" tabindex="0" data-mode="personal">
-              <div class="cardTop">
-                <div class="icon">🌿</div>
-                <div>
-                  <p class="cardTitle">Magánélet</p>
-                  <div class="cardSub">lista prioritás szerint, határidőkkel</div>
-                  <div class="divider"></div>
-                  <div class="enter">Enter</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="addRow">
-            <button class="addFab" id="btnAddFab" aria-label="Feladat hozzáadása">
-              <span>＋</span>
-            </button>
-            <div class="addHint">Feladat (lista)</div>
-
-            <button class="addFab" id="btnOpenCalendar" aria-label="Naptár">
-              <span>📅</span>
-            </button>
-            <div class="addHint">Naptár</div>
-          </div>
-
-          <div class="foot">Lista és naptár külön adatbázis. A naptár “mai” feladatai automatikusan felmennek a listára.</div>
-        </div>
-      </section>
-
-      <!-- LIST VIEW -->
-      <section class="view" id="view-list">
-        <div class="paperWrap">
-          <div class="topbar">
-            <div class="brand">
-              <div class="brandBadge" id="listModeIcon">🌿</div>
-              <div class="brandText">
-                <div class="small">Zsolt adatbázisa</div>
-                <div class="big" id="listModeLabel">Magánélet</div>
-              </div>
-            </div>
-
-            <div class="actions">
-              <div class="seg" title="Gyors váltás">
-                <button id="segBusiness"><span>💼</span><span>Váll.</span></button>
-                <button id="segPersonal"><span>🌿</span><span>Magán</span></button>
-              </div>
-
-              <button class="btn" id="btnListCalendar">Naptár</button>
-              <button class="btn" id="btnListBack">Kezdőlap</button>
-            </div>
-          </div>
-
-          <div class="paperGrid" style="grid-template-columns: 1fr;">
-            <div class="paperPanel">
-              <div class="panelHead">
-                <div class="cap">lista</div>
-                <div class="h">Feladatok (prioritás szerint)</div>
-              </div>
-              <div class="paperBody scrollPad" id="paperList"></div>
-            </div>
-          </div>
-
-          <!-- + (átúszás a feladat hozzáadásához) -->
-          <button class="fabPlus" id="fabListAdd" aria-label="Új feladat hozzáadása">
-            <span>＋</span>
-          </button>
-        </div>
+</div>
       </section>
 
       <!-- ADD TASK (LIST DB ONLY) -->
-      <section class="view slide-enter" id="view-add">
+      <section class="view zoom-enter" id="view-add">
         <div class="formWrap">
           <div class="topbar" style="border-bottom:1px solid rgba(255,255,255,0.08); border-radius: 26px;">
             <div class="brand">
@@ -1174,52 +1098,7 @@
           </div>
 
           <div class="formGrid">
-            <div class="panel">
-              <div class="panelHead">
-                <div class="cap">bevitel</div>
-                <div class="h">Új lista-feladat</div>
-              </div>
-              <div class="panelBody scrollPad" style="padding:14px;">
-                <div class="pillRow">
-                  <div class="pill">lista adatbázis • localStorage</div>
-                  <div class="pill" id="modePill">mód: —</div>
-                </div>
-
-                <div class="field">
-                  <label for="tTitle">Cím</label>
-                  <input id="tTitle" placeholder="Pl.: Árajánlat / Edzés / Hívás" />
-                </div>
-
-                <div class="togRow">
-                  <button class="tog" id="togListMode" type="button" title="Kattintásra vált">
-                    <span class="k">terület</span><span class="v" id="togListModeV">🌿 MAGÁN</span>
-                  </button>
-                  <button class="tog" id="togListPrio" type="button" title="Kattintásra vált">
-                    <span class="k">prio</span><span class="v" id="togListPrioV">P2</span>
-                  </button>
-                </div>
-
-                <div class="row2">
-                  <div class="field">
-                    <label for="tTime">Idő (határidő)</label>
-                    <input id="tTime" type="time" />
-                  </div>
-                  <div class="field">
-                    <label for="tDate">Dátum (határidő)</label>
-                    <input id="tDate" type="date" />
-                  </div>
-                </div>
-
-                <div class="row2" style="align-items:end; margin-top:12px;">
-                  <button class="btn" id="btnSaveTask" style="padding:12px 14px;">Mentés</button>
-                  <button class="btn" id="btnClearForm" style="padding:12px 14px;">Törlés</button>
-                </div>
-
-                <div class="smallNote" id="autoP1Note"></div>
-              </div>
-            </div>
-
-            <div class="panel">
+<div class="panel">
               <div class="panelHead">
                 <div class="cap">gyorsmentés</div>
                 <div class="h">Enter</div>
@@ -1235,28 +1114,51 @@
           </div>
         </div>
       </section>
-      <!-- ADD TASK (CALENDAR DB ONLY) -->
-      <section class="view slide-enter" id="view-cal-add">
-        <div class="formWrap">
-          <div class="topbar" style="border-bottom:1px solid rgba(255,255,255,0.08); border-radius: 26px;">
+
+      <!-- CALENDAR VIEW -->
+      <section class="view" id="view-calendar">
+        <div class="calWrap">
+          <div class="topbar">
             <div class="brand">
               <div class="brandBadge">📅</div>
               <div class="brandText">
                 <div class="small">Zsolt adatbázisa</div>
-                <div class="big">Feladat hozzáadása (naptár)</div>
+                <div class="big" id="calTitle">Naptár</div>
               </div>
             </div>
             <div class="actions">
-              <button class="btn" id="btnCalAddBack">Vissza</button>
-              <button class="btn" id="btnCalAddToList">Lista</button>
+              <button class="btn" id="btnCalToList">Lista</button>
+              <button class="btn" id="btnCalHome">Kezdőlap</button>
             </div>
           </div>
 
-          <div class="formGrid" style="grid-template-columns: 1fr;">
+          <div class="calGrid">
+            <div class="panel">
+              <div class="panelHead" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
+                <div>
+                  <div class="cap">naptár</div>
+                  <div class="h" id="calWeekLabel">Heti nézet</div>
+                </div>
+                <div class="actions" style="gap:8px;">
+                  <button class="btn" id="btnPrevWeek">◀</button>
+                  <button class="btn" id="btnTodayMonth">Ma</button>
+                  <button class="btn" id="btnNextWeek">▶</button>
+                  <button class="btn btnPlus" id="btnCalGoAdd" title="Új feladat">＋</button>
+                </div>
+              </div>
+
+              <div class="panelBody scrollPad">
+                <div class="weekStack">
+                  <div class="rangeLayer" id="rangeLayer"></div>
+                  <div class="weekWide" id="weekWide"></div>
+                </div>
+              </div>
+            </div>
+
             <div class="panel">
               <div class="panelHead">
                 <div class="cap">bevitel</div>
-                <div class="h">Új naptár-feladat</div>
+                <div class="h">Naptár-feladat</div>
               </div>
               <div class="panelBody scrollPad" style="padding:14px;">
                 <div class="pillRow">
@@ -1271,7 +1173,7 @@
 
                 <div class="row2">
                   <div class="field">
-                    <label for="cTime">Idő (opcionális)</label>
+                    <label for="cTime">Idő (rendezés)</label>
                     <input id="cTime" type="time" />
                   </div>
                   <div class="field">
@@ -1320,53 +1222,7 @@
         </div>
       </section>
 
-
-      <!-- CALENDAR VIEW -->
-      <section class="view" id="view-calendar">
-        <div class="calWrap">
-          <div class="topbar">
-            <div class="brand">
-              <div class="brandBadge">📅</div>
-              <div class="brandText">
-                <div class="small">Zsolt adatbázisa</div>
-                <div class="big" id="calTitle">Naptár</div>
-              </div>
-            </div>
-            <div class="actions">
-              <button class="btn" id="btnCalToList">Lista</button>
-              <button class="btn" id="btnCalHome">Kezdőlap</button>
-            </div>
-          </div>
-
-          <div class="calGrid" style="grid-template-columns: 1fr;">
-            <div class="panel">
-              <div class="panelHead" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
-                <div>
-                  <div class="cap">naptár</div>
-                  <div class="h" id="calWeekLabel">Heti nézet</div>
-                </div>
-                <div class="actions" style="gap:8px;">
-                  <button class="btn" id="btnPrevWeek">◀</button>
-                  <button class="btn" id="btnTodayMonth">Ma</button>
-                  <button class="btn" id="btnNextWeek">▶</button>
-                </div>
-              </div>
-
-              <div class="panelBody scrollPad">
-                <div class="weekStack">
-                  <div class="rangeLayer" id="rangeLayer"></div>
-                  <div class="weekWide" id="weekWide"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- + (átúszás az új naptár-feladathoz) -->
-          <button class="fabPlus" id="fabCalAdd" aria-label="Új naptár-feladat hozzáadása">
-            <span>＋</span>
-          </button>
-        </div>
-      </section></div>
+    </div>
   </div>
 
   <script>
@@ -1379,7 +1235,6 @@
       list: document.getElementById("view-list"),
       add: document.getElementById("view-add"),
       calendar: document.getElementById("view-calendar"),
-      "cal-add": document.getElementById("view-cal-add"),
     };
     function show(name){
       Object.values(views).forEach(v => v.classList.remove("active"));
@@ -1668,32 +1523,6 @@
       show("add");
       setTimeout(()=> tTitle.focus(), 120);
     }
-    // -------------------------
-    // CAL ADD PAGE (separate)
-    // -------------------------
-    function openCalAddPage(originEl){
-      if(originEl) setTunnelOriginFromEl(originEl);
-      else { tunnel.style.setProperty("--x","50%"); tunnel.style.setProperty("--y","50%"); }
-
-      tunnel.classList.add("on");
-      setTimeout(() => {
-        tunnel.classList.remove("on");
-        // defaults
-        calAddMode = currentMode || "personal";
-        renderCalToggle();
-        rangeOn = false;
-        multiPanel.style.display = "none";
-        btnMultiToggle.textContent = "📆 Több nap";
-        selectedDate = selectedDate || todayYMD();
-        cDate.value = selectedDate;
-        cFrom.value = selectedDate;
-        cTo.value = selectedDate;
-        renderSelectedDayTasks();
-        show("cal-add");
-        setTimeout(()=> cTitle.focus(), 140);
-      }, 360);
-    }
-
     function addListTask(){
       const title = (tTitle.value || "").trim();
       if(!title){
@@ -2144,7 +1973,8 @@
         day.addEventListener("click", () => {
           selectedDate = ymd;
           renderCalendarWeek();
-          openDayView(ymd);
+          renderSelectedDayTasks();
+          setTimeout(()=> cTitle.focus(), 120);
         });
 
         day.addEventListener("dblclick", (e)=> { e.stopPropagation(); openDayView(ymd); });
@@ -2163,8 +1993,14 @@
     function openCalendar(){
       selectedDate = todayYMD();
       calWeekStart = mondayStart(new Date());
+      rangeOn = false;
+      multiPanel.style.display = "none";
+      btnMultiToggle.textContent = "📆 Több nap";
+      cDate.value = selectedDate;
       renderCalendarWeek();
+      renderSelectedDayTasks();
       show("calendar");
+      setTimeout(()=> cTitle.focus(), 150);
     }
 
     function clearCalForm(){
@@ -2244,10 +2080,11 @@
       cTitle.focus();
     }
 
-    btnCalAddTask.addEventListener("click", ()=>{ addCalendarEvent(); openCalendar(); });
-    cTitle.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addCalendarEvent(); openCalendar(); } });
-    cTime.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addCalendarEvent(); openCalendar(); } });
-cDate.addEventListener("change", () => {
+    btnCalAddTask.addEventListener("click", addCalendarEvent);
+    cTitle.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addCalendarEvent(); } });
+    cTime.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addCalendarEvent(); } });
+
+    cDate.addEventListener("change", () => {
       if(cDate.value){
         selectedDate = cDate.value;
         renderCalendarWeek();
@@ -2465,17 +2302,14 @@ cDate.addEventListener("change", () => {
       tunnel.classList.add("on");
       setTimeout(() => { tunnel.classList.remove("on"); openAddPage(); }, 360);
     });
-    document.getElementById("fabListAdd").addEventListener("click", (e)=> diveToAdd(e.currentTarget));
-document.getElementById("btnListCalendar").addEventListener("click", openCalendar);
-    document.getElementById("btnCalToList").addEventListener("click", ()=> { renderList(); show("list"); });
+    document.getElementById("btnListAdd").addEventListener("click", (e)=> diveToAdd(e.currentTarget));
 
-    document.getElementById("btnCalAddBack").addEventListener("click", openCalendar);
-    document.getElementById("btnCalAddToList").addEventListener("click", ()=> { renderList(); show("list"); });
+    document.getElementById("btnListCalendar").addEventListener("click", openCalendar);
+    document.getElementById("btnCalToList").addEventListener("click", ()=> { renderList(); show("list"); });
 
     document.getElementById("btnOpenCalendar").addEventListener("click", openCalendar);
 
-    document.getElementById("fabCalAdd").addEventListener("click", (e)=> openCalAddPage(e.currentTarget));
-document.getElementById("btnAddBack").addEventListener("click", ()=> { renderList(); show("list"); });
+    document.getElementById("btnAddBack").addEventListener("click", ()=> { renderList(); show("list"); });
     document.getElementById("btnToCalendarFromAdd").addEventListener("click", openCalendar);
 
     segBusiness.addEventListener("click", ()=> enterMode("business"));
@@ -2489,12 +2323,53 @@ document.getElementById("btnAddBack").addEventListener("click", ()=> { renderLis
     renderSelectedDayTasks();
   </script>
 
+  <!-- Mobile bottom navigation -->
+  <nav class="mnav" id="mnav" aria-label="Alsó navigáció">
+    <button class="mnavBtn" id="mnavHome" type="button"><span class="mico">🏠</span><span class="mlab">Kezdő</span></button>
+    <button class="mnavBtn" id="mnavList" type="button"><span class="mico">🧾</span><span class="mlab">Lista</span></button>
+    <button class="mnavBtn mnavAdd" id="mnavAdd" type="button" aria-label="Új feladat"><span class="mico">＋</span><span class="mlab">Új</span></button>
+    <button class="mnavBtn" id="mnavCal" type="button"><span class="mico">📅</span><span class="mlab">Naptár</span></button>
+  </nav>
+
+
 <script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js").catch(() => {});
-    });
+  // Smooth "átúszás" to Add page
+  function goToAdd(fromEl){
+    try{
+      if(fromEl) fromEl.classList.add("add-pulse");
+      document.body.classList.add("add-swipe");
+      setTimeout(function(){
+        try{ if(typeof openAddPage === "function") openAddPage(); }catch(e){}
+        document.body.classList.remove("add-swipe");
+        if(fromEl) fromEl.classList.remove("add-pulse");
+      }, 140);
+    }catch(e){
+      try{ openAddPage(); }catch(_){}
+    }
   }
+
+  // Bind header + buttons + bottom nav after DOM ready
+  (function(){
+    function $(id){ return document.getElementById(id); }
+    function bind(){
+      var btnListGoAdd = $("btnListGoAdd");
+      var btnCalGoAdd  = $("btnCalGoAdd");
+
+      if(btnListGoAdd) btnListGoAdd.addEventListener("click", function(){ goToAdd(btnListGoAdd); });
+      if(btnCalGoAdd)  btnCalGoAdd.addEventListener("click", function(){ goToAdd(btnCalGoAdd); });
+
+      // Bottom nav
+      var home = $("mnavHome"), list = $("mnavList"), add = $("mnavAdd"), cal = $("mnavCal");
+      if(home) home.addEventListener("click", function(){ try{ show("mode"); }catch(e){} });
+      if(list) list.addEventListener("click", function(){ try{ renderList(); show("list"); }catch(e){} });
+      if(add)  add.addEventListener("click", function(){ goToAdd(add); });
+      if(cal)  cal.addEventListener("click", function(){ try{ openCalendar(); }catch(e){} });
+
+      // If we land on list/calendar, ensure big content area
+    }
+    if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
+    else bind();
+  })();
 </script>
 
 </body>
