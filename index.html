@@ -1156,6 +1156,40 @@
 .view.active{opacity:1; transform: translateY(0);}
 .view.leaving{opacity:0; transform: translateY(-6px);} 
 #swoosh{display:none !important;}
+
+    /* =========================
+       Smooth, subtle transitions
+       ========================= */
+    .view{
+      transition: opacity 160ms var(--ease), transform 160ms var(--ease);
+      will-change: opacity, transform;
+    }
+    .stage.isSwitching .view.active{
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    /* =========================
+       Full-page list & calendar
+       ========================= */
+    #view-list .paperPanel,
+    #view-list .panel,
+    #view-calendar .panel{
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    #view-list .paperPanel{ padding: 0 !important; }
+    #view-list .paperBody{ padding: 0 !important; }
+    #view-calendar .calGrid{ padding: 0 !important; gap: 0 !important; }
+
+
+    /* List view: keep only the mode switch in the top bar */
+    #view-list .brand{ display:none !important; }
+    #view-list .actions > .btn{ display:none !important; }
+    #view-list .actions{ width: 100% !important; }
+    #view-list .seg{ width: 100% !important; }
+
 </style>
 </head>
 <body>
@@ -1540,6 +1574,19 @@
       Object.values(views).forEach(v => v.classList.remove("active"));
       views[name].classList.add("active");
     }
+
+    function smoothShow(name){
+      const stage = document.querySelector(".stage");
+      if(!stage){ show(name); return; }
+      stage.classList.add("isSwitching");
+      setTimeout(()=>{ 
+        show(name);
+        // force reflow so fade-in is crisp
+        void stage.offsetHeight;
+        stage.classList.remove("isSwitching");
+      }, 140);
+    }
+
     let currentMode = "personal";
     setTimeout(() => show("mode"), 1700);
 
@@ -2044,6 +2091,7 @@ function getTasksForMode(mode){
 
     function enterMode(mode){
       currentMode = mode;
+      try{ if (document.getElementById("view-list")?.classList.contains("active")) renderList(); }catch(e){}
       renderList();
       show("list");
     }
