@@ -1150,6 +1150,12 @@
     #view-list #btnListCalendar,
     #view-list #btnListBack{ display:none !important; }
 
+
+/* Subtle view transition */
+.view{opacity:0; transform: translateY(6px); transition: opacity 180ms ease, transform 180ms ease;}
+.view.active{opacity:1; transform: translateY(0);}
+.view.leaving{opacity:0; transform: translateY(-6px);} 
+#swoosh{display:none !important;}
 </style>
 </head>
 <body>
@@ -1809,6 +1815,36 @@
       renderListToggles();
       tTitle.focus();
     }
+    
+    function openCalAddPage(fromEl){
+      try{
+        // default calendar add mode follows current list mode
+        calAddMode = currentMode;
+        if (typeof renderCalToggle === "function") renderCalToggle();
+
+        // reset fields
+        cTitle.value = "";
+        cDate.value = todayYMD();
+        cTime.value = "";
+
+        // reset range mode
+        rangeOn = false;
+        if (multiPanel) multiPanel.style.display = "none";
+        if (btnMultiToggle) btnMultiToggle.textContent = "Több nap";
+
+        cFrom.value = todayYMD();
+        cTo.value = todayYMD();
+
+        // navigate with subtle transition
+        if (typeof go === "function") go("caladd", fromEl || null);
+        else show("caladd");
+
+        setTimeout(()=>{ try{ cTitle.focus(); }catch(e){} }, 140);
+      }catch(e){
+        try{ show("caladd"); }catch(_){}
+      }
+    }
+
     function openAddPage(){
       listAddMode = currentMode;
       listAddPrio = "P2";
@@ -1865,10 +1901,9 @@
     const listModeLabel = document.getElementById("listModeLabel");
     const countNote = document.getElementById("countNote");
 
-    const segBusiness = document.getElementById("segBusiness");
-    const segPersonal = document.getElementById("segPersonal");
-
-    function getTasksForMode(mode){
+    const segBusinessBtns = document.querySelectorAll("#segBusiness");
+      const segPersonalBtns = document.querySelectorAll("#segPersonal");
+function getTasksForMode(mode){
       purgeListDoneFromPreviousDays();
       syncCalendarTodayToList();
       const tasks = loadListTasks();
@@ -1889,9 +1924,9 @@
       });
     }
     function setSegActive(){
-      segBusiness.classList.toggle("active", currentMode === "business");
-      segPersonal.classList.toggle("active", currentMode === "personal");
-    }
+      segBusinessBtns.forEach(b=>b.classList.toggle("active", currentMode==="business"));
+      segPersonalBtns.forEach(b=>b.classList.toggle("active", currentMode==="personal"));
+}
 
     function renderList(){
       listModeIcon.textContent = modeIcon(currentMode);
@@ -2606,10 +2641,9 @@
     document.getElementById("btnAddBack").addEventListener("click", ()=> { renderList(); show("list"); });
     document.getElementById("btnToCalendarFromAdd").addEventListener("click", openCalendar);
 
-    segBusiness.addEventListener("click", ()=> enterMode("business"));
-    segPersonal.addEventListener("click", ()=> enterMode("personal"));
-
-    // Init
+    segBusinessBtns.forEach(b=>b.addEventListener("click", ()=> enterMode("business")));
+      segPersonalBtns.forEach(b=>b.addEventListener("click", ()=> enterMode("personal")));
+// Init
     renderListToggles();
     updateAutoP1Hint();
     syncCalendarTodayToList();
@@ -2678,7 +2712,7 @@
       // FABs
       var fabList=$("fabList"), fabCal=$("fabCal");
       if(fabList) fabList.addEventListener("click", goAdd);
-      if(fabCal)  fabCal.addEventListener("click", goAdd);
+      if(fabCal)  fabCal.addEventListener("click", function(){ openCalAddPage(fabCal); });
 
       // Also hook existing header add buttons if present
       var btnListAdd=$("btnListAdd");
@@ -2704,18 +2738,13 @@
     }
     window.go = function(viewName, fromEl){
       try{
-        if(!swoosh || typeof show !== "function") { show(viewName); return; }
-        const c = centerFrom(fromEl);
-        swoosh.style.setProperty("--sx", c.x + "%");
-        swoosh.style.setProperty("--sy", c.y + "%");
-        swoosh.classList.remove("off");
-        swoosh.classList.add("on");
-        setTimeout(() => { try{ show(viewName); }catch(e){} }, 150);
-        setTimeout(() => {
-          swoosh.classList.remove("on");
-          swoosh.classList.add("off");
-          setTimeout(()=>{ swoosh.classList.remove("off"); }, 260);
-        }, 320);
+        if(typeof show !== "function"){ return; }
+        const cur = document.querySelector(".view.active");
+        if(cur){
+          cur.classList.add("leaving");
+          setTimeout(()=>{ cur.classList.remove("leaving"); }, 220);
+        }
+        setTimeout(()=>{ try{ show(viewName); }catch(e){} }, 120);
       }catch(e){
         try{ show(viewName); }catch(_){}
       }
