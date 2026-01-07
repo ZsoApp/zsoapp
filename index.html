@@ -1096,34 +1096,50 @@
     }
 
 
+    
     /* =========================
-       Swoosh transition overlay
+       Cleaner transition overlay
        ========================= */
     #swoosh{
       position: fixed;
       inset: 0;
       pointer-events: none;
       z-index: 10000;
+      background: #050608;
+      clip-path: circle(0px at var(--sx, 50%) var(--sy, 50%));
+      -webkit-clip-path: circle(0px at var(--sx, 50%) var(--sy, 50%));
       opacity: 0;
-      background: radial-gradient(circle at var(--sx, 50%) var(--sy, 50%),
-        rgba(255,255,255,0.10) 0%,
-        rgba(255,255,255,0.06) 18%,
-        rgba(0,0,0,0.0) 38%),
-        rgba(0,0,0,0);
-      transform: scale(1);
     }
     #swoosh.on{
       opacity: 1;
-      animation: swooshPop 360ms var(--ease) both;
-      background: radial-gradient(circle at var(--sx, 50%) var(--sy, 50%),
-        rgba(255,255,255,0.12) 0%,
-        rgba(255,255,255,0.08) 22%,
-        rgba(5,6,8,1) 55%,
-        rgba(5,6,8,1) 100%);
+      animation: swooshWipe 320ms var(--ease) both;
     }
-    @keyframes swooshPop{
-      0%{ transform: scale(0.85); }
-      100%{ transform: scale(1.0); }
+    #swoosh.off{
+      opacity: 1;
+      animation: swooshUnwipe 240ms var(--ease) both;
+    }
+    @keyframes swooshWipe{
+      from{
+        clip-path: circle(0px at var(--sx, 50%) var(--sy, 50%));
+        -webkit-clip-path: circle(0px at var(--sx, 50%) var(--sy, 50%));
+      }
+      to{
+        clip-path: circle(160vmax at var(--sx, 50%) var(--sy, 50%));
+        -webkit-clip-path: circle(160vmax at var(--sx, 50%) var(--sy, 50%));
+      }
+    }
+    @keyframes swooshUnwipe{
+      from{
+        clip-path: circle(160vmax at var(--sx, 50%) var(--sy, 50%));
+        -webkit-clip-path: circle(160vmax at var(--sx, 50%) var(--sy, 50%));
+      }
+      to{
+        clip-path: circle(0px at var(--sx, 50%) var(--sy, 50%));
+        -webkit-clip-path: circle(0px at var(--sx, 50%) var(--sy, 50%));
+        opacity: 0;
+      }
+    }
+100%{ transform: scale(1.0); }
     }
 
     /* Lista: felül csak a váltó legyen */
@@ -1313,46 +1329,22 @@
       </section>
 
       <!-- ADD TASK (LIST DB ONLY) -->
-      <section class="view zoom-enter" id="view-add">
+      <section class="view" id="view-add">
         <div class="formWrap">
-          <div class="topbar" style="border-bottom:1px solid rgba(255,255,255,0.08); border-radius: 26px;">
+          <div class="topbar">
             <div class="brand">
               <div class="brandBadge">＋</div>
               <div class="brandText">
                 <div class="small">Zsolt adatbázisa</div>
-                <div class="big">Feladat hozzáadása (lista)</div>
+                <div class="big">Új feladat (lista)</div>
               </div>
             </div>
             <div class="actions">
               <button class="btn" id="btnAddBack">Vissza</button>
-              <button class="btn" id="btnToCalendarFromAdd">Naptár</button>
             </div>
           </div>
 
-          <div class="formGrid">
-            
-          </div>
-        </div>
-      </section>
-
-      <!-- CALENDAR VIEW -->
-      
-      <section class="view" id="view-caladd">
-        <div class="calWrap">
-          <div class="topbar">
-            <div class="brand">
-              <div class="brandBadge">➕</div>
-              <div class="brandText">
-                <div class="small">Zsolt adatbázisa</div>
-                <div class="big">Naptár feladat</div>
-              </div>
-            </div>
-            <div class="actions">
-              <button class="btn" id="btnCalAddBack">Vissza</button>
-            </div>
-          </div>
-
-          <div class="calGrid" style="grid-template-columns: 1fr;">
+          <div class="formGrid" style="grid-template-columns: 1fr; padding: 12px;">
             <div class="panel">
               <div class="panelHead">
                 <div class="cap">bevitel</div>
@@ -1397,66 +1389,32 @@
                 <div class="smallNote" id="autoP1Note"></div>
               </div>
             </div>
-
-            <div class="panel">
-              <div class="panelHead">
-                <div class="cap">gyorsmentés</div>
-                <div class="h">Enter</div>
-              </div>
-              <div class="panelBody scrollPad">
-                <div class="smallNote">
-                  • Cím mezőben Enter → mentés<br/>
-                  • Idő mezőben Enter → mentés<br/>
-                  • Mentés gomb megmarad
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
-<section class="view" id="view-calendar">
-        <div class="calWrap">
+      <!-- CALENDAR VIEW -->
+      
+      <section class="view" id="view-caladd">
+        <div class="formWrap">
           <div class="topbar">
             <div class="brand">
-              <div class="brandBadge">📅</div>
+              <div class="brandBadge">＋</div>
               <div class="brandText">
                 <div class="small">Zsolt adatbázisa</div>
-                <div class="big" id="calTitle">Naptár</div>
+                <div class="big">Új esemény (naptár)</div>
               </div>
             </div>
             <div class="actions">
-              <button class="btn" id="btnCalToList">Lista</button>
-              <button class="btn" id="btnCalHome">Kezdőlap</button>
+              <button class="btn" id="btnCalAddBack">Vissza</button>
             </div>
           </div>
 
-          <div class="calGrid" style="grid-template-columns: 1fr;">
-            <div class="panel">
-              <div class="panelHead" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
-                <div>
-                  <div class="cap">naptár</div>
-                  <div class="h" id="calWeekLabel">Heti nézet</div>
-                </div>
-                <div class="actions" style="gap:8px;">
-                  <button class="btn" id="btnPrevWeek">◀</button>
-                  <button class="btn" id="btnTodayMonth">Ma</button>
-                  <button class="btn" id="btnNextWeek">▶</button>
-                </div>
-              </div>
-
-              <div class="panelBody scrollPad">
-                <div class="weekStack">
-                  <div class="rangeLayer" id="rangeLayer"></div>
-                  <div class="weekWide" id="weekWide"></div>
-                </div>
-              </div>
-            </div>
-
+          <div class="formGrid" style="grid-template-columns: 1fr; padding: 12px;">
             <div class="panel">
               <div class="panelHead">
                 <div class="cap">bevitel</div>
-                <div class="h">Naptár-feladat</div>
+                <div class="h">Új naptár esemény</div>
               </div>
               <div class="panelBody scrollPad" style="padding:14px;">
                 <div class="pillRow">
@@ -1508,14 +1466,51 @@
                   <button class="btn" id="btnCalAddTask" style="padding:12px 14px;">Mentés</button>
                   <button class="btn" id="btnCalClear" style="padding:12px 14px;">Törlés</button>
                 </div>
-
-                <div class="paperLine"></div>
-                <div class="pill" style="margin-top:6px;">Kijelölt nap feladatai (idő szerint)</div>
-                <div id="calDayTasks" style="margin-top:10px;"></div>
-
-                <div class="smallNote" id="calSyncNote"></div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+<section class="view" id="view-calendar">
+        <div class="calWrap">
+          <div class="topbar">
+            <div class="brand">
+              <div class="brandBadge">📅</div>
+              <div class="brandText">
+                <div class="small">Zsolt adatbázisa</div>
+                <div class="big" id="calTitle">Naptár</div>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn" id="btnCalToList">Lista</button>
+              <button class="btn" id="btnCalHome">Kezdőlap</button>
+            </div>
+          </div>
+
+          <div class="calGrid" style="grid-template-columns: 1fr;">
+            <div class="panel">
+              <div class="panelHead" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
+                <div>
+                  <div class="cap">naptár</div>
+                  <div class="h" id="calWeekLabel">Heti nézet</div>
+                </div>
+                <div class="actions" style="gap:8px;">
+                  <button class="btn" id="btnPrevWeek">◀</button>
+                  <button class="btn" id="btnTodayMonth">Ma</button>
+                  <button class="btn" id="btnNextWeek">▶</button>
+                </div>
+              </div>
+
+              <div class="panelBody scrollPad">
+                <div class="weekStack">
+                  <div class="rangeLayer" id="rangeLayer"></div>
+                  <div class="weekWide" id="weekWide"></div>
+                </div>
+              </div>
+            </div>
+
+            
           </div>
         </div>
       </section>
@@ -2697,7 +2692,7 @@
 
 
 <script>
-  // View navigation with "átúszás" (swoosh) effect
+  // View navigation with clean "átúszás" (circle wipe) effect
   (function(){
     const swoosh = document.getElementById("swoosh");
     function centerFrom(el){
@@ -2713,13 +2708,30 @@
         const c = centerFrom(fromEl);
         swoosh.style.setProperty("--sx", c.x + "%");
         swoosh.style.setProperty("--sy", c.y + "%");
+        swoosh.classList.remove("off");
         swoosh.classList.add("on");
         setTimeout(() => { try{ show(viewName); }catch(e){} }, 150);
-        setTimeout(() => { swoosh.classList.remove("on"); }, 360);
+        setTimeout(() => {
+          swoosh.classList.remove("on");
+          swoosh.classList.add("off");
+          setTimeout(()=>{ swoosh.classList.remove("off"); }, 260);
+        }, 320);
       }catch(e){
         try{ show(viewName); }catch(_){}
       }
     };
+  })();
+</script>
+
+
+<script>
+  // Add-page back buttons
+  (function(){
+    function $(id){ return document.getElementById(id); }
+    var b1 = $("btnAddBack");
+    var b2 = $("btnCalAddBack");
+    if(b1) b1.addEventListener("click", function(){ try{ go("list", b1); }catch(e){ try{ show("list"); }catch(_){} } });
+    if(b2) b2.addEventListener("click", function(){ try{ go("calendar", b2); }catch(e){ try{ show("calendar"); }catch(_){} } });
   })();
 </script>
 
@@ -2735,6 +2747,8 @@
   <!-- Floating + buttons (Lista / Naptár) -->
   <button class="fab" id="fabList" type="button" aria-label="Új feladat">＋</button>
   <button class="fab" id="fabCal" type="button" aria-label="Új feladat">＋</button>
+
+  <div id="swoosh" aria-hidden="true"></div>
 
   <!-- Mobile bottom navigation -->
   <nav class="mnav" id="mnav" aria-label="Alsó navigáció">
