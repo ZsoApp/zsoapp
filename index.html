@@ -966,235 +966,48 @@
     }
     .monthTile.current{ border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); }
   
-    /* =========================
-       Phone UX overhaul (PWA)
-       ========================= */
-    html, body{
-      background:#050608;
-      height:100%;
-      overscroll-behavior:none;
+    /* Subtle view transition */
+    .view{opacity:0; transform: translateY(6px); transition: opacity 180ms ease, transform 180ms ease;}
+    .view.active{opacity:1; transform: translateY(0);}
+    .view.leaving{opacity:0; transform: translateY(-6px);}
+
+    /* Full-screen list & calendar (no inner boxes) */
+    #view-list .paperGrid,
+    #view-calendar .calGrid{
+      padding: 0 !important;
+      gap: 12px !important;
     }
-    body{ margin:0; }
-
-    /* Transition wipe for "átúszás" */
-    .navWipe{
-      position:fixed;
-      inset:0;
-      background: radial-gradient(1200px 700px at 50% 80%, rgba(255,255,255,0.08), rgba(0,0,0,0) 55%),
-                  linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0));
-      background-color:#050608;
-      opacity:0;
-      pointer-events:none;
-      transform: translateY(18px) scale(0.98);
-      transition: opacity 220ms var(--ease), transform 220ms var(--ease);
-      z-index: 10000;
-    }
-    .navWipe.on{
-      opacity:1;
-      transform: translateY(0px) scale(1);
-    }
-
-    /* Hide rules panel on list */
-    #view-list .paperGrid > .panel{ display:none !important; }
-
-    /* Hide calendar input panel (bevitel) - calendar gets full focus */
-    #view-calendar .calGrid > .panel:nth-child(2){ display:none !important; }
-    #view-calendar .calGrid{ grid-template-columns: 1fr !important; }
-
-    /* Floating action buttons */
-    .fab{
-      position: fixed;
-      right: 16px;
-      bottom: calc(86px + env(safe-area-inset-bottom));
-      width: 62px;
-      height: 62px;
-      border-radius: 22px;
-      border: 1px solid rgba(255,255,255,0.16);
-      background: rgba(255,255,255,0.07);
-      color: rgba(255,255,255,0.92);
-      font-size: 30px;
-      line-height: 1;
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index: 9999;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 18px 50px rgba(0,0,0,0.45);
-      cursor:pointer;
-    }
-    .fab:active{ transform: scale(0.98); }
-
-    /* Bottom nav (mobile) */
-    .mnav{ display:none; }
-
-    @media (max-width: 520px) and (orientation: portrait){
-      /* full canvas */
-      .app{ padding:0 !important; }
-      .stage{
-        width:100vw !important;
-        height:100dvh !important;
-        border-radius:0 !important;
-      }
-
-      /* Make all grids single column on phone */
-      .paperGrid, .formGrid, .calGrid, .dayViewGrid{
-        grid-template-columns: 1fr !important;
-      }
-
-      /* De-clutter topbars */
-      .topbar{
-        position: sticky;
-        top: 0;
-        z-index: 40;
-        padding-top: calc(10px + env(safe-area-inset-top)) !important;
-      }
-
-      /* Mobile bottom nav visible */
-      .mnav{
-        display:flex;
-        position: fixed;
-        left: 0; right: 0; bottom: 0;
-        padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-        gap: 10px;
-        background: rgba(0,0,0,0.55);
-        border-top: 1px solid rgba(255,255,255,0.08);
-        backdrop-filter: blur(16px);
-        z-index: 9998;
-      }
-      .mnavBtn{
-        flex: 1 1 0;
-        border: 1px solid rgba(255,255,255,0.10);
-        background: rgba(0,0,0,0.22);
-        color: rgba(255,255,255,0.92);
-        border-radius: 18px;
-        padding: 10px 8px;
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        justify-content:center;
-        gap: 6px;
-        min-height: 52px;
-      }
-      .mnavBtn:active{ transform: scale(0.99); }
-      .mnavBtn .mico{ font-size: 18px; line-height: 1; }
-      .mnavBtn .mlab{
-        font-family: var(--mono);
-        font-size: 10px;
-        letter-spacing: .18em;
-        text-transform: uppercase;
-        color: rgba(255,255,255,0.62);
-      }
-      .mnavAdd{
-        border-color: rgba(255,255,255,0.18);
-        background: rgba(255,255,255,0.06);
-      }
-
-      /* Ensure scroll content not hidden behind nav */
-      .panelBody.scrollPad, .paperBody, .timelineBody, .monthGrid{
-        padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
-      }
-    }
-
-
-    
-    /* =========================
-       Cleaner transition overlay
-       ========================= */
-    #swoosh{
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 10000;
-      background: #050608;
-      clip-path: circle(0px at var(--sx, 50%) var(--sy, 50%));
-      -webkit-clip-path: circle(0px at var(--sx, 50%) var(--sy, 50%));
-      opacity: 0;
-    }
-    #swoosh.on{
-      opacity: 1;
-      animation: swooshWipe 320ms var(--ease) both;
-    }
-    #swoosh.off{
-      opacity: 1;
-      animation: swooshUnwipe 240ms var(--ease) both;
-    }
-    @keyframes swooshWipe{
-      from{
-        clip-path: circle(0px at var(--sx, 50%) var(--sy, 50%));
-        -webkit-clip-path: circle(0px at var(--sx, 50%) var(--sy, 50%));
-      }
-      to{
-        clip-path: circle(160vmax at var(--sx, 50%) var(--sy, 50%));
-        -webkit-clip-path: circle(160vmax at var(--sx, 50%) var(--sy, 50%));
-      }
-    }
-    @keyframes swooshUnwipe{
-      from{
-        clip-path: circle(160vmax at var(--sx, 50%) var(--sy, 50%));
-        -webkit-clip-path: circle(160vmax at var(--sx, 50%) var(--sy, 50%));
-      }
-      to{
-        clip-path: circle(0px at var(--sx, 50%) var(--sy, 50%));
-        -webkit-clip-path: circle(0px at var(--sx, 50%) var(--sy, 50%));
-        opacity: 0;
-      }
-    }
-100%{ transform: scale(1.0); }
-    }
-
-    /* Lista: felül csak a váltó legyen */
-    #view-list .topbar{ justify-content:center; }
-    #view-list .brand{ display:none !important; }
-    #view-list .actions{ width:100%; justify-content:center; }
-    #view-list #btnListAdd,
-    #view-list #btnListCalendar,
-    #view-list #btnListBack{ display:none !important; }
-
-
-/* Subtle view transition */
-.view{opacity:0; transform: translateY(6px); transition: opacity 180ms ease, transform 180ms ease;}
-.view.active{opacity:1; transform: translateY(0);}
-.view.leaving{opacity:0; transform: translateY(-6px);} 
-#swoosh{display:none !important;}
-
-    /* =========================
-       Smooth, subtle transitions
-       ========================= */
-    .view{
-      transition: opacity 160ms var(--ease), transform 160ms var(--ease);
-      will-change: opacity, transform;
-    }
-    .stage.isSwitching .view.active{
-      opacity: 0;
-      transform: translateY(6px);
-    }
-
-    /* =========================
-       Full-page list & calendar
-       ========================= */
-    #view-list .paperPanel,
     #view-list .panel,
     #view-calendar .panel{
       background: transparent !important;
       border: none !important;
       box-shadow: none !important;
+      border-radius: 0 !important;
     }
-    #view-list .paperPanel{ padding: 0 !important; }
-    #view-list .paperBody{ padding: 0 !important; }
-    #view-calendar .calGrid{ padding: 0 !important; gap: 0 !important; }
+    #view-list .panelHead,
+    #view-calendar .panelHead{
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0 !important;
+    }
+    #view-add .topbar{ border-radius:0 !important; }
+    #view-add .formWrap{ padding:0 !important; }
 
-
-    /* List view: keep only the mode switch in the top bar */
-    #view-list .brand{ display:none !important; }
-    #view-list .actions > .btn{ display:none !important; }
-    #view-list .actions{ width: 100% !important; }
-    #view-list .seg{ width: 100% !important; }
-
+    .iconBtn{
+      width: 44px; height: 44px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.92);
+      font-size: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .iconBtn:active{ transform: scale(0.98); }
 </style>
 </head>
 <body>
   <div class="noise"></div>
-  <div class="navWipe" id="navWipe" aria-hidden="true"></div>
 
   <div class="app">
     <div class="stage">
@@ -1369,22 +1182,23 @@
       </section>
 
       <!-- ADD TASK (LIST DB ONLY) -->
-      <section class="view" id="view-add">
+      <section class="view " id="view-add">
         <div class="formWrap">
-          <div class="topbar">
+          <div class="topbar" style="border-bottom:1px solid rgba(255,255,255,0.08); border-radius: 26px;">
             <div class="brand">
               <div class="brandBadge">＋</div>
               <div class="brandText">
                 <div class="small">Zsolt adatbázisa</div>
-                <div class="big">Új feladat (lista)</div>
+                <div class="big">Feladat / esemény hozzáadása</div>
               </div>
             </div>
             <div class="actions">
               <button class="btn" id="btnAddBack">Vissza</button>
+              <button class="btn" id="btnToCalendarFromAdd">Naptár</button>
             </div>
           </div>
 
-          <div class="formGrid" style="grid-template-columns: 1fr; padding: 12px;">
+          <div class="formGrid" id="addListForm">
             <div class="panel">
               <div class="panelHead">
                 <div class="cap">bevitel</div>
@@ -1429,32 +1243,26 @@
                 <div class="smallNote" id="autoP1Note"></div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      <!-- CALENDAR VIEW -->
-      
-      <section class="view" id="view-caladd">
-        <div class="formWrap">
-          <div class="topbar">
-            <div class="brand">
-              <div class="brandBadge">＋</div>
-              <div class="brandText">
-                <div class="small">Zsolt adatbázisa</div>
-                <div class="big">Új esemény (naptár)</div>
+            <div class="panel">
+              <div class="panelHead">
+                <div class="cap">gyorsmentés</div>
+                <div class="h">Enter</div>
+              </div>
+              <div class="panelBody scrollPad">
+                <div class="smallNote">
+                  • Cím mezőben Enter → mentés<br/>
+                  • Idő mezőben Enter → mentés<br/>
+                  • Mentés gomb megmarad
+                </div>
               </div>
             </div>
-            <div class="actions">
-              <button class="btn" id="btnCalAddBack">Vissza</button>
-            </div>
           </div>
-
-          <div class="formGrid" style="grid-template-columns: 1fr; padding: 12px;">
+          <div class="formGrid" id="addCalForm" style="display:none">
             <div class="panel">
               <div class="panelHead">
                 <div class="cap">bevitel</div>
-                <div class="h">Új naptár esemény</div>
+                <div class="h">Naptár-feladat</div>
               </div>
               <div class="panelBody scrollPad" style="padding:14px;">
                 <div class="pillRow">
@@ -1509,10 +1317,12 @@
               </div>
             </div>
           </div>
+
         </div>
       </section>
 
-<section class="view" id="view-calendar">
+      <!-- CALENDAR VIEW -->
+      <section class="view" id="view-calendar">
         <div class="calWrap">
           <div class="topbar">
             <div class="brand">
@@ -1523,7 +1333,9 @@
               </div>
             </div>
             <div class="actions">
-              <button class="btn" id="btnCalToList">Lista</button>
+              
+              <button class="iconBtn" id="btnCalAddOpen" aria-label="Új esemény">＋</button>
+<button class="btn" id="btnCalToList">Lista</button>
               <button class="btn" id="btnCalHome">Kezdőlap</button>
             </div>
           </div>
@@ -1568,25 +1380,12 @@
       list: document.getElementById("view-list"),
       add: document.getElementById("view-add"),
       calendar: document.getElementById("view-calendar"),
-      caladd: document.getElementById("view-caladd"),
     };
     function show(name){
       Object.values(views).forEach(v => v.classList.remove("active"));
       views[name].classList.add("active");
     }
-
-    function smoothShow(name){
-      const stage = document.querySelector(".stage");
-      if(!stage){ show(name); return; }
-      stage.classList.add("isSwitching");
-      setTimeout(()=>{ 
-        show(name);
-        // force reflow so fade-in is crisp
-        void stage.offsetHeight;
-        stage.classList.remove("isSwitching");
-      }, 140);
-    }
-
+    let addContext = 'list';
     let currentMode = "personal";
     setTimeout(() => show("mode"), 1700);
 
@@ -1808,14 +1607,9 @@
       tunnel.style.setProperty("--x", x.toFixed(2) + "%");
       tunnel.style.setProperty("--y", y.toFixed(2) + "%");
     }
-    function diveToAdd(originEl){
-      if(originEl) setTunnelOriginFromEl(originEl);
-      else { tunnel.style.setProperty("--x","50%"); tunnel.style.setProperty("--y","50%"); }
-      tunnel.classList.add("on");
-      setTimeout(() => {
-        tunnel.classList.remove("on");
-        openAddPage();
-      }, 360);
+    function diveToAdd(originEl, context){
+      try{ openAddPage(context||"list"); }catch(e){}
+    }, 360);
     }
 
     // -------------------------
@@ -1862,37 +1656,29 @@
       renderListToggles();
       tTitle.focus();
     }
-    
-    function openCalAddPage(fromEl){
-      try{
-        // default calendar add mode follows current list mode
-        calAddMode = currentMode;
-        if (typeof renderCalToggle === "function") renderCalToggle();
+    function openAddPage(context){
 
-        // reset fields
-        cTitle.value = "";
-        cDate.value = todayYMD();
-        cTime.value = "";
+      // default list-add mode follows current mode
+      listAddMode = currentMode;
+      renderListToggles();
 
-        // reset range mode
-        rangeOn = false;
-        if (multiPanel) multiPanel.style.display = "none";
-        if (btnMultiToggle) btnMultiToggle.textContent = "Több nap";
+      // switch full-screen form
+      const addListForm = document.getElementById("addListForm");
+      const addCalForm  = document.getElementById("addCalForm");
+      const addTitle    = document.querySelector('#view-add .big');
+      if(addContext === "calendar"){
+        if(addListForm) addListForm.style.display = "none";
+        if(addCalForm)  addCalForm.style.display  = "block";
+        if(addTitle) addTitle.textContent = "Új esemény (naptár)";
+        if(typeof renderCalToggle === "function"){ calAddMode = currentMode; renderCalToggle(); }
+      go("add");
 
-        cFrom.value = todayYMD();
-        cTo.value = todayYMD();
-
-        // navigate with subtle transition
-        if (typeof go === "function") go("caladd", fromEl || null);
-        else show("caladd");
-
-        setTimeout(()=>{ try{ cTitle.focus(); }catch(e){} }, 140);
-      }catch(e){
-        try{ show("caladd"); }catch(_){}
+      }else{
+        if(addCalForm)  addCalForm.style.display  = "none";
+        if(addListForm) addListForm.style.display = "block";
+        if(addTitle) addTitle.textContent = "Új feladat (lista)";
       }
-    }
-
-    function openAddPage(){
+      addContext = context || "list";
       listAddMode = currentMode;
       listAddPrio = "P2";
       renderListToggles();
@@ -1948,9 +1734,10 @@
     const listModeLabel = document.getElementById("listModeLabel");
     const countNote = document.getElementById("countNote");
 
-    const segBusinessBtns = document.querySelectorAll("#segBusiness");
-      const segPersonalBtns = document.querySelectorAll("#segPersonal");
-function getTasksForMode(mode){
+    const segBusiness = document.getElementById("segBusiness");
+    const segPersonal = document.getElementById("segPersonal");
+
+    function getTasksForMode(mode){
       purgeListDoneFromPreviousDays();
       syncCalendarTodayToList();
       const tasks = loadListTasks();
@@ -1971,9 +1758,9 @@ function getTasksForMode(mode){
       });
     }
     function setSegActive(){
-      segBusinessBtns.forEach(b=>b.classList.toggle("active", currentMode==="business"));
-      segPersonalBtns.forEach(b=>b.classList.toggle("active", currentMode==="personal"));
-}
+      segBusiness.classList.toggle("active", currentMode === "business");
+      segPersonal.classList.toggle("active", currentMode === "personal");
+    }
 
     function renderList(){
       listModeIcon.textContent = modeIcon(currentMode);
@@ -2091,7 +1878,6 @@ function getTasksForMode(mode){
 
     function enterMode(mode){
       currentMode = mode;
-      try{ if (document.getElementById("view-list")?.classList.contains("active")) renderList(); }catch(e){}
       renderList();
       show("list");
     }
@@ -2674,142 +2460,43 @@ function getTasksForMode(mode){
     document.getElementById("btnListBack").addEventListener("click", ()=> show("mode"));
     document.getElementById("btnCalHome").addEventListener("click", ()=> show("mode"));
 
-    addFab.addEventListener("click", ()=> {
-      setTunnelOriginFromEl(addFab);
-      tunnel.classList.add("on");
+    tunnel.classList.add("on");
       setTimeout(() => { tunnel.classList.remove("on"); openAddPage(); }, 360);
     });
-    document.getElementById("btnListAdd").addEventListener("click", (e)=> diveToAdd(e.currentTarget));
+    document.getElementById("btnListAdd").addEventListener("click", (e)=> diveToAdd(e.currentTarget,"list"));
+    document.getElementById("btnCalAddOpen").addEventListener("click", (e)=> diveToAdd(e.currentTarget,"calendar"));
 
     document.getElementById("btnListCalendar").addEventListener("click", openCalendar);
     document.getElementById("btnCalToList").addEventListener("click", ()=> { renderList(); show("list"); });
 
     document.getElementById("btnOpenCalendar").addEventListener("click", openCalendar);
 
-    document.getElementById("btnAddBack").addEventListener("click", ()=> { renderList(); show("list"); });
-    document.getElementById("btnToCalendarFromAdd").addEventListener("click", openCalendar);
+    document.getElementById("btnAddBack").addEventListener("click", ()=> { if(addContext==="calendar"){ openCalendar(); } else { renderList(); show("list"); } });
+document.getElementById("btnToCalendarFromAdd").addEventListener("click", openCalendar);
 
-    segBusinessBtns.forEach(b=>b.addEventListener("click", ()=> enterMode("business")));
-      segPersonalBtns.forEach(b=>b.addEventListener("click", ()=> enterMode("personal")));
-// Init
+    segBusiness.addEventListener("click", ()=> enterMode("business"));
+    segPersonal.addEventListener("click", ()=> enterMode("personal"));
+
+    // Init
     renderListToggles();
     updateAutoP1Hint();
     syncCalendarTodayToList();
     renderCalendarWeek();
     renderSelectedDayTasks();
-  </script>
-
-
-<script>
-  // Phone navigation + "átúszás" effect to Add page
-  (function(){
-    function $(id){ return document.getElementById(id); }
-    var wipe = $("navWipe");
-
-    function isActive(id){
-      var el = document.getElementById(id);
-      return !!(el && el.classList.contains("active"));
-    }
-
-    function refreshFAB(){
-      var fabList = $("fabList");
-      var fabCal  = $("fabCal");
-      if (fabList) fabList.style.display = isActive("view-list") ? "flex" : "none";
-      if (fabCal)  fabCal.style.display  = isActive("view-calendar") ? "flex" : "none";
-    }
-
-    // Patch show() to refresh FABs
-    if (typeof window.show === "function" && !window.__show_patch_fab){
-      window.__show_patch_fab = true;
-      var _show = window.show;
-      window.show = function(name){
-        _show(name);
-        refreshFAB();
-      };
-      setTimeout(refreshFAB, 0);
-    } else {
-      setInterval(refreshFAB, 300);
-    }
-
-    function goAdd(){
-      // Animate wipe, then open add page
-      if (wipe){
-        wipe.classList.add("on");
-        setTimeout(function(){
-          try{ window.openAddPage(); }catch(e){ try{ window.show("add"); }catch(_){} }
-          // hide wipe after view is visible
-          setTimeout(function(){ wipe.classList.remove("on"); }, 220);
-        }, 160);
-      } else {
-        try{ window.openAddPage(); }catch(e){ try{ window.show("add"); }catch(_){} }
-      }
-    }
-
-    function goHome(){ try{ window.show("mode"); }catch(e){} }
-    function goList(){ try{ window.renderList(); window.show("list"); }catch(e){} }
-    function goCal(){ try{ window.openCalendar(); }catch(e){ try{ window.show("calendar"); }catch(_){} } }
-
-    function bind(){
-      // Bottom nav
-      var home=$("mnavHome"), list=$("mnavList"), add=$("mnavAdd"), cal=$("mnavCal");
-      if(home) home.addEventListener("click", goHome);
-      if(list) list.addEventListener("click", goList);
-      if(add)  add.addEventListener("click", goAdd);
-      if(cal)  cal.addEventListener("click", goCal);
-
-      // FABs
-      var fabList=$("fabList"), fabCal=$("fabCal");
-      if(fabList) fabList.addEventListener("click", goAdd);
-      if(fabCal)  fabCal.addEventListener("click", function(){ openCalAddPage(fabCal); });
-
-      // Also hook existing header add buttons if present
-      var btnListAdd=$("btnListAdd");
-      if(btnListAdd) btnListAdd.addEventListener("click", function(e){ e.preventDefault(); goAdd(); });
-    }
-
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind);
-    else bind();
-  })();
-</script>
-
-
-<script>
-  // View navigation with clean "átúszás" (circle wipe) effect
-  (function(){
-    const swoosh = document.getElementById("swoosh");
-    function centerFrom(el){
-      if(!el) return {x: 50, y: 50};
-      const r = el.getBoundingClientRect();
-      const x = ((r.left + r.width/2) / window.innerWidth) * 100;
-      const y = ((r.top + r.height/2) / window.innerHeight) * 100;
-      return {x, y};
-    }
-    window.go = function(viewName, fromEl){
+  
+    // Subtle navigation (same everywhere)
+    window.go = function(viewName){
       try{
-        if(typeof show !== "function"){ return; }
         const cur = document.querySelector(".view.active");
         if(cur){
           cur.classList.add("leaving");
-          setTimeout(()=>{ cur.classList.remove("leaving"); }, 220);
+          setTimeout(()=>cur.classList.remove("leaving"), 220);
         }
-        setTimeout(()=>{ try{ show(viewName); }catch(e){} }, 120);
+        setTimeout(()=>{ show(viewName); }, 120);
       }catch(e){
         try{ show(viewName); }catch(_){}
       }
     };
-  })();
-</script>
-
-
-<script>
-  // Add-page back buttons
-  (function(){
-    function $(id){ return document.getElementById(id); }
-    var b1 = $("btnAddBack");
-    var b2 = $("btnCalAddBack");
-    if(b1) b1.addEventListener("click", function(){ try{ go("list", b1); }catch(e){ try{ show("list"); }catch(_){} } });
-    if(b2) b2.addEventListener("click", function(){ try{ go("calendar", b2); }catch(e){ try{ show("calendar"); }catch(_){} } });
-  })();
 </script>
 
 <script>
@@ -2819,21 +2506,6 @@ function getTasksForMode(mode){
     });
   }
 </script>
-
-
-  <!-- Floating + buttons (Lista / Naptár) -->
-  <button class="fab" id="fabList" type="button" aria-label="Új feladat">＋</button>
-  <button class="fab" id="fabCal" type="button" aria-label="Új feladat">＋</button>
-
-  <div id="swoosh" aria-hidden="true"></div>
-
-  <!-- Mobile bottom navigation -->
-  <nav class="mnav" id="mnav" aria-label="Alsó navigáció">
-    <button class="mnavBtn" id="mnavHome" type="button"><span class="mico">🏠</span><span class="mlab">Kezdő</span></button>
-    <button class="mnavBtn" id="mnavList" type="button"><span class="mico">🧾</span><span class="mlab">Lista</span></button>
-    <button class="mnavBtn mnavAdd" id="mnavAdd" type="button" aria-label="Új feladat"><span class="mico">＋</span><span class="mlab">Új</span></button>
-    <button class="mnavBtn" id="mnavCal" type="button"><span class="mico">📅</span><span class="mlab">Naptár</span></button>
-  </nav>
 
 </body>
 </html>
