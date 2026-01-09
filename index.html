@@ -1382,14 +1382,17 @@
       calendar: document.getElementById("view-calendar"),
     };
     function show(name){
-      Object.values(views).forEach(v => v.classList.remove("active"));
+      Object.values(views).filter(Boolean).forEach(v => v.classList.remove("active"));
+      if(!views[name]) return;
       views[name].classList.add("active");
     }
     let addContext = 'list';
     let currentMode = "personal";
-    setTimeout(() => show("mode"), 1700);
-
-    // -------------------------
+    window.addEventListener("load", () => { setTimeout(() => { try{ show("mode"); }catch(e){} }, 700); });
+    // fallback: tap splash to continue
+    const _splash = document.getElementById("view-splash");
+    _splash && _splash.addEventListener("click", ()=>{ try{ show("mode"); }catch(e){} });
+// -------------------------
     // Storage keys
     // -------------------------
     const LS_LIST_KEY = "zsolt_db_tasks_list_v7";
