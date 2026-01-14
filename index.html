@@ -1404,6 +1404,7 @@
       if(!views[name]) return;
       views[name].classList.add("active");
     }
+    function go(name){ show(name); }
     let addContext = 'list';
     let currentMode = "personal";
     window.addEventListener("load", () => { setTimeout(() => { try{ show("mode"); }catch(e){} }, 700); });
@@ -1632,7 +1633,7 @@
       // unified, subtle open for add screen (no tunnel)
       addContext = context || "list";
       prepareAddScreen();
-      go("add");
+      show("add");
     }
 
 function renderListToggles(){
@@ -1673,35 +1674,33 @@ function renderListToggles(){
     }
 
 function openAddPage(context){
-
-      // default list-add mode follows current mode
-      listAddMode = currentMode;
-      renderListToggles();
-
-      // switch full-screen form
-      const addListForm = document.getElementById("addListForm");
-      const addCalForm  = document.getElementById("addCalForm");
-      const addTitle    = document.querySelector('#view-add .big');
-      if(addContext === "calendar"){
-        if(addListForm) addListForm.style.display = "none";
-        if(addCalForm)  addCalForm.style.display  = "block";
-        if(addTitle) addTitle.textContent = "Új esemény (naptár)";
-        if(typeof renderCalToggle === "function"){ calAddMode = currentMode; renderCalToggle(); }
-      go("add");
-
-      }else{
-        if(addCalForm)  addCalForm.style.display  = "none";
-        if(addListForm) addListForm.style.display = "block";
-        if(addTitle) addTitle.textContent = "Új feladat (lista)";
-      }
+      // context: "list" | "calendar"
       addContext = context || "list";
+      prepareAddScreen();
+
+      // defaults
       listAddMode = currentMode;
       listAddPrio = "P2";
       renderListToggles();
       updateAutoP1Hint();
+
+      // calendar-form conveniences
+      if(addContext === "calendar"){
+        calAddMode = currentMode;
+        if(typeof renderCalToggle === "function"){ renderCalToggle(); }
+        if(cDate && selectedDate) cDate.value = selectedDate;
+        if(selDatePill && selectedDate) selDatePill.textContent = "dátum: " + selectedDate;
+      }
+
       show("add");
-      setTimeout(()=> tTitle.focus(), 120);
+
+      // focus
+      setTimeout(() => {
+        if(addContext === "calendar"){ if(cTitle) cTitle.focus(); }
+        else { if(tTitle) tTitle.focus(); }
+      }, 140);
     }
+
     function addListTask(){
       const title = (tTitle.value || "").trim();
       if(!title){
