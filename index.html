@@ -1004,6 +1004,24 @@
       justify-content: center;
     }
     .iconBtn:active{ transform: scale(0.98); }
+
+
+    /* ===== Fullscreen, no inner boxes ===== */
+    #view-list .paperFrame, #view-list .paperGrid, #view-list .panel,
+    #view-calendar .calGrid, #view-calendar .panel,
+    #view-add .panel{
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+    }
+    #view-list .paperGrid{ padding: 0 !important; gap: 0 !important; }
+    #view-list .paperFrame{ padding: 0 !important; }
+    #view-calendar .calGrid{ padding: 0 !important; gap: 0 !important; }
+    #view-add .formGrid{ grid-template-columns: 1fr !important; padding: 14px !important; }
+    #view-add .panelBody{ padding: 0 !important; }
+    #view-add .panelHead{ display:none !important; }
+
 </style>
 </head>
 <body>
@@ -1189,7 +1207,7 @@
               <div class="brandBadge">＋</div>
               <div class="brandText">
                 <div class="small">Zsolt adatbázisa</div>
-                <div class="big">Feladat / esemény hozzáadása</div>
+                <div class="big" id="addTitle">Új feladat</div>
               </div>
             </div>
             <div class="actions">
@@ -1611,28 +1629,13 @@
       tunnel.style.setProperty("--y", y.toFixed(2) + "%");
     }
     function diveToAdd(originEl, context){
-      try{ openAddPage(context||"list"); }catch(e){}
-    }, 360);
+      // unified, subtle open for add screen (no tunnel)
+      addContext = context || "list";
+      prepareAddScreen();
+      go("add");
     }
 
-    // -------------------------
-    // LIST ADD
-    // -------------------------
-    const tTitle = document.getElementById("tTitle");
-    const tDate = document.getElementById("tDate");
-    const tTime = document.getElementById("tTime");
-    const modePill = document.getElementById("modePill");
-    const autoP1Note = document.getElementById("autoP1Note");
-
-    let listAddMode = "personal";
-    let listAddPrio = "P2";
-
-    const togListMode = document.getElementById("togListMode");
-    const togListModeV = document.getElementById("togListModeV");
-    const togListPrio = document.getElementById("togListPrio");
-    const togListPrioV = document.getElementById("togListPrioV");
-
-    function renderListToggles(){
+function renderListToggles(){
       togListModeV.textContent = (listAddMode === "business" ? "💼 VÁLL" : "🌿 MAGÁN");
       togListPrioV.textContent = listAddPrio;
       modePill.textContent = "mód: " + modeLabel(listAddMode);
@@ -1659,7 +1662,17 @@
       renderListToggles();
       tTitle.focus();
     }
-    function openAddPage(context){
+    
+    function prepareAddScreen(){
+      const addListForm = document.getElementById("addListForm");
+      const addCalForm = document.getElementById("addCalForm");
+      const titleEl = document.getElementById("addTitle");
+      if(addListForm) addListForm.style.display = (addContext==="list") ? "grid" : "none";
+      if(addCalForm) addCalForm.style.display = (addContext==="calendar") ? "grid" : "none";
+      if(titleEl) titleEl.textContent = (addContext==="calendar") ? "Új esemény" : "Új feladat";
+    }
+
+function openAddPage(context){
 
       // default list-add mode follows current mode
       listAddMode = currentMode;
@@ -1879,10 +1892,22 @@
       renderList();
     });
 
-    function enterMode(mode){
+    
+    function updateListHeader(){
+      const icon = document.getElementById("listModeIcon");
+      const label = document.getElementById("listModeLabel");
+      const b = document.getElementById("segBusiness");
+      const p = document.getElementById("segPersonal");
+      if(icon) icon.textContent = (currentMode==="business") ? "💼" : "🌿";
+      if(label) label.textContent = (currentMode==="business") ? "Vállalkozás" : "Magánélet";
+      if(b) b.classList.toggle("active", currentMode==="business");
+      if(p) p.classList.toggle("active", currentMode==="personal");
+    }
+
+function enterMode(mode){
       currentMode = mode;
+      updateListHeader();
       renderList();
-      show("list");
     }
 
     // -------------------------
@@ -2016,63 +2041,54 @@
       return days;
     }
 
-    function assignLanes(segments){
-      const lanes = [];
-      const placed = [];
-      const sorted = segments.slice().sort((a,b)=> a.startCol - b.startCol || a.endCol - b.endCol);
-      for(const seg of sorted){
-        let laneIndex = -1;
-        for(let i=0;i<lanes.length;i++){
-          if(seg.startCol > lanes[i]) { laneIndex = i; break; }
-        }
-        if(laneIndex === -1){
-          laneIndex = lanes.length;
-          lanes.push(-1);
-        }
-        lanes[laneIndex] = Math.max(lanes[laneIndex], seg.endCol);
-        placed.push({...seg, lane: laneIndex});
+    
+    // -------------------------
+    // WEEK GRID (simple & stable)
+    // -------------------------
+    function buildWeekDays(){
+      const d0 = new Date(calWeekStart);
+      const out = [];
+      for(let i=0;i<7;i++){
+        const d = new Date(d0);
+        d.setDate(d0.getDate()+i);
+        out.push(ymdOf(d));
       }
-      return {placed, laneCount: lanes.length};
+      return out;
     }
 
-    function renderRangeBarsForWeek(weekFrom, weekTo){
+    function renderRangeBarsForWeek(weekFrom, weekTo, weekDays){
       rangeLayer.innerHTML = "";
       const ranges = getCalRangesIntersecting(weekFrom, weekTo);
-
-      if(ranges.length === 0){
+      if(!ranges.length){
         rangeLayer.style.display = "none";
         return;
       }
       rangeLayer.style.display = "grid";
-      const days = buildWeekDays();
-      const idxOf = new Map(days.map((d,i)=>[d,i]));
+      rangeLayer.style.gridTemplateColumns = "repeat(7, 1fr)";
+      rangeLayer.style.gridAutoRows = "34px";
 
-      const segments = [];
-      for(const ev of ranges){
+      const idxOf = new Map(weekDays.map((d,i)=>[d,i]));
+      const segs = ranges.map(ev=>{
         const from = (ev.from < weekFrom) ? weekFrom : ev.from;
         const to   = (ev.to > weekTo) ? weekTo : ev.to;
-        const startCol = idxOf.get(from);
-        const endCol = idxOf.get(to);
-        if(startCol == null || endCol == null) continue;
-        segments.push({startCol, endCol, ev});
+        return { start: idxOf.get(from), end: idxOf.get(to), ev };
+      }).filter(s=>s.start!=null && s.end!=null);
+
+      const lanes = [];
+      for(const s of segs.sort((a,b)=>a.start-b.start || a.end-b.end)){
+        let lane = 0;
+        while(lanes[lane]!=null && s.start <= lanes[lane]) lane++;
+        lanes[lane] = s.end;
+        s.lane = lane;
       }
 
-      const {placed} = assignLanes(segments);
-      rangeLayer.style.gridAutoRows = "42px";
-
-      for(const seg of placed){
+      for(const s of segs){
         const bar = document.createElement("div");
         bar.className = "rangeBar";
-        bar.style.gridColumn = (seg.startCol+1) + " / " + (seg.endCol+2);
-        bar.style.gridRow = (seg.lane+1) + " / " + (seg.lane+2);
-
-        const when = seg.ev.time && seg.ev.time.trim() ? seg.ev.time : "";
-        const meta = `${modeIcon(seg.ev.mode||"personal")} ${seg.ev.from}–${seg.ev.to}`;
-
-        bar.innerHTML = `
-          <div class="t">${escapeHtml(seg.ev.title)}</div>
-          <div class="m">${escapeHtml(meta)}${when ? (" • " + escapeHtml(when)) : ""}</div>
-        `;
+        bar.style.gridColumn = (s.start+1) + " / " + (s.end+2);
+        bar.style.gridRow = (s.lane+1);
+        bar.innerHTML = `<span class="dot"></span><span class="t">${escapeHtml(s.ev.title)}</span>`;
+        bar.title = `${s.ev.from} — ${s.ev.to}`;
         rangeLayer.appendChild(bar);
       }
     }
@@ -2083,80 +2099,57 @@
 
       const weekDays = buildWeekDays();
       const weekFrom = weekDays[0];
-      const weekTo = weekDays[6];
+      const weekTo   = weekDays[6];
 
       const weekLabelStart = parseYMD(weekFrom);
-      const weekLabelEnd = parseYMD(weekTo);
+      const weekLabelEnd   = parseYMD(weekTo);
       calWeekLabel.textContent =
         `${formatHU(weekLabelStart,{month:"long", day:"2-digit"})} — ${formatHU(weekLabelEnd,{month:"long", day:"2-digit"})}`;
 
-      renderRangeBarsForWeek(weekFrom, weekTo);
+      renderRangeBarsForWeek(weekFrom, weekTo, weekDays);
 
-      for(let i=0;i<7;i++){
-        const ymd = weekDays[i];
-        const isToday = ymd === todayYMD();
-        const isSel = ymd === selectedDate;
-
+      for(const ymd of weekDays){
         const day = document.createElement("div");
-        day.className = "dayWide" + (isToday ? " today" : "") + (isSel ? " sel" : "");
-        day.setAttribute("data-ymd", ymd);
+        day.className = "dayBox";
 
         const d = parseYMD(ymd);
+        const dow = formatHU(d,{weekday:"short"}).toUpperCase();
+        const date = formatHU(d,{month:"2-digit", day:"2-digit"});
 
-        const head = document.createElement("div");
-        head.className = "dayWideTop";
-        head.innerHTML = `
-          <div class="w">${formatHU(d,{weekday:"short"})}</div>
-          <div class="d">${formatHU(d,{month:"2-digit", day:"2-digit"})}</div>
+        day.innerHTML = `
+          <div class="dayHead">
+            <div class="dayName">${dow}</div>
+            <div class="dayDate">${date}</div>
+          </div>
+          <div class="dayList" data-ymd="${ymd}"></div>
         `;
-        day.appendChild(head);
 
-        const taskWrap = document.createElement("div");
-        taskWrap.style.display = "flex";
-        taskWrap.style.flexDirection = "column";
-        taskWrap.style.gap = "8px";
-        day.appendChild(taskWrap);
+        const list = day.querySelector(".dayList");
+        const singles = getCalSinglesForDate(ymd)
+          .sort((a,b)=>(a.time||"99:99").localeCompare(b.time||"99:99"));
 
-        const singlesAll = sortSingles(getCalSinglesForDate(ymd));
-        const total = singlesAll.length;
+        if(!singles.length){
+          list.innerHTML = `<div class="muted">—</div>`;
+        }else{
+          for(const ev of singles){
+            const it = document.createElement("div");
+            it.className = "miniTask";
+            it.innerHTML = `<span class="t">${escapeHtml(ev.title)}</span>${ev.time?`<span class="time">${ev.time}</span>`:""}`;
+            it.title = ev.time ? `${ev.time} • ${ev.title}` : ev.title;
+            list.appendChild(it);
+          }
+        }
 
-        singlesAll.forEach(t => {
-          const block = document.createElement("div");
-          block.className = "calTask";
-          const when = (t.time && t.time.trim()) ? t.time : "—";
-          block.innerHTML = `
-            <div class="t">${escapeHtml(t.title)}</div>
-            <div class="m"><span>${escapeHtml(when)}</span><span>•</span><span>${escapeHtml(modeIcon(t.mode||"personal"))}</span></div>
-          `;
-          taskWrap.appendChild(block);
-        });
-
-        const pill = document.createElement("div");
-        pill.className = "miniPill";
-        pill.textContent = total ? `${total} db` : `üres`;
-        day.appendChild(pill);
-
-        day.addEventListener("click", () => {
+        day.addEventListener("click", ()=>{
           selectedDate = ymd;
-          renderCalendarWeek();
-          renderSelectedDayTasks();
-          setTimeout(()=> cTitle.focus(), 120);
+          if(selDatePill) selDatePill.textContent = "dátum: " + selectedDate;
         });
-
-        day.addEventListener("dblclick", (e)=> { e.stopPropagation(); openDayView(ymd); });
-
-        let lpTimer = null;
-        day.addEventListener("touchstart", () => {
-          lpTimer = setTimeout(()=> openDayView(ymd), 480);
-        }, { passive:true });
-        day.addEventListener("touchend", () => { if(lpTimer) clearTimeout(lpTimer); lpTimer=null; }, { passive:true });
-        day.addEventListener("touchcancel", () => { if(lpTimer) clearTimeout(lpTimer); lpTimer=null; }, { passive:true });
 
         weekWide.appendChild(day);
       }
     }
 
-    function openCalendar(){
+function openCalendar(){
       selectedDate = todayYMD();
       calWeekStart = mondayStart(new Date());
       rangeOn = false;
@@ -2462,10 +2455,6 @@
 
     document.getElementById("btnListBack").addEventListener("click", ()=> show("mode"));
     document.getElementById("btnCalHome").addEventListener("click", ()=> show("mode"));
-
-    tunnel.classList.add("on");
-      setTimeout(() => { tunnel.classList.remove("on"); openAddPage(); }, 360);
-    });
     document.getElementById("btnListAdd").addEventListener("click", (e)=> diveToAdd(e.currentTarget,"list"));
     document.getElementById("btnCalAddOpen").addEventListener("click", (e)=> diveToAdd(e.currentTarget,"calendar"));
 
