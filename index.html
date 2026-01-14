@@ -1910,7 +1910,7 @@ function enterMode(mode){
       currentMode = mode;
       updateListHeader();
       renderList();
-      show("list");
+      show("list"); // <- belépés a listába (ez hiányzott)
     }
 
     // -------------------------
@@ -2453,7 +2453,7 @@ function openCalendar(){
     document.querySelectorAll(".card").forEach(card=>{
       const mode = card.getAttribute("data-mode");
       card.addEventListener("click", ()=> enterMode(mode));
-      card.addEventListener("keydown", (e)=>{ if(e.key==="Enter" || e.key===" "){ e.preventDefault(); enterMode(mode); } });
+      card.addEventListener("keydown", (e)=>{ if(e.key==="Enter" || e.key===" ") enterMode(mode); });
     });
 
     document.getElementById("btnListBack").addEventListener("click", ()=> show("mode"));
