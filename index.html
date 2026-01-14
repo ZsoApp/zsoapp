@@ -1376,6 +1376,9 @@
                 <div class="weekStack">
                   <div class="rangeLayer" id="rangeLayer"></div>
                   <div class="weekWide" id="weekWide"></div>
+                  <div class="smallNote" id="calSyncNote"></div>
+                  <div id="calDayTasks"></div>
+
                 </div>
               </div>
             </div>
@@ -1907,6 +1910,7 @@ function enterMode(mode){
       currentMode = mode;
       updateListHeader();
       renderList();
+      show("list");
     }
 
     // -------------------------
@@ -2449,7 +2453,7 @@ function openCalendar(){
     document.querySelectorAll(".card").forEach(card=>{
       const mode = card.getAttribute("data-mode");
       card.addEventListener("click", ()=> enterMode(mode));
-      card.addEventListener("keydown", (e)=>{ if(e.key==="Enter" || e.key===" ") enterMode(mode); });
+      card.addEventListener("keydown", (e)=>{ if(e.key==="Enter" || e.key===" "){ e.preventDefault(); enterMode(mode); } });
     });
 
     document.getElementById("btnListBack").addEventListener("click", ()=> show("mode"));
