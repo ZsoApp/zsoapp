@@ -549,7 +549,13 @@
       flex-direction:column;
     }
     .paperBody{ padding: 16px 18px; overflow:auto; flex:1 1 auto; min-height:0; padding-bottom:34px; }
-    .paperItem{
+    
+    /* prevent text selection on tasks */
+    .paperItem, .paperItem *{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+    .paperDel{ -webkit-user-select:none; user-select:none; }
+.paperItem{
+      -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+      touch-action: manipulation;
       display:flex;
       gap: 12px;
       align-items:flex-start;
@@ -561,6 +567,8 @@
       transform: translateY(0);
       transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease);
       user-select:none;
+    
+      touch-action: manipulation;
     }
     .paperItem + .paperItem{ margin-top: 10px; }
     .paperItem:hover{
@@ -1083,7 +1091,8 @@
 
   
     /* Calendar tab visibility */
-    .calSeg{ display:none; }
+    /* desktopon is látszódhat, mobilon a media query úgyis kezeli */
+    .calSeg{ display:flex; }
     #calPanelWeek, #view-caladd{ display:flex; flex-direction:column; }
     </style>
 </head>
@@ -1366,6 +1375,7 @@
                   <button id="segCalWeek" class="active"><span>🗓️</span><span>Hét</span></button>
                   <button id="segCalAdd"><span>＋</span><span>Feladat</span></button>
                 </div>
+                <button class="btn" id="btnCalAddTop">＋ Feladat</button>
                 <button class="btn" id="btnCalToList">Lista</button>
               </div>
             </div>
@@ -1415,7 +1425,11 @@
     let currentMode = "business";
     show("splash");
     // betöltő képernyő után indulunk a VÁLL. listával
-    setTimeout(()=>{ show("list"); }, 1200);
+    setTimeout(()=>{
+      currentMode = "business";
+      try{ renderList(); }catch{}
+      show("list");
+    }, 1200);
 
     function hideKeyboard(){
       try{ if(document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur(); }catch{}
@@ -2293,8 +2307,11 @@
     // -------------------------
     const segCalWeek = document.getElementById('segCalWeek');
     const segCalAdd  = document.getElementById('segCalAdd');
+    
+    const btnCalAddTop = document.getElementById('btnCalAddTop');
     if(segCalWeek) segCalWeek.addEventListener('click', ()=> { hideKeyboard(); openCalendarPage(); });
     if(segCalAdd)  segCalAdd.addEventListener('click', ()=> { hideKeyboard(); openCalAddPage(); });
+    if(btnCalAddTop) btnCalAddTop.addEventListener('click', ()=>{ hideKeyboard(); openCalAddPage(); });
 
     // -------------------------
     // Navigation
@@ -2310,6 +2327,13 @@
 
     segBusiness.addEventListener("click", ()=> enterMode("business"));
     segPersonal.addEventListener("click", ()=> enterMode("personal"));
+
+    // BOOT_RENDER_LIST_ON_READY
+    // Ha a splash után listára érkezünk, a feladatok akkor is renderelődjenek,
+    // ha a timeout nagyon korán futott volna (pl. régebbi mobil böngészők).
+    setTimeout(()=>{
+      try{ if(views.list.classList.contains('active')) renderList(); }catch{}
+    }, 0);
 
     // Init
     renderListToggles();
@@ -2555,7 +2579,7 @@
       renderRangeBarsForWeek(weekFrom, weekTo);
 
       // Phone: 1 oszlop + lapozás (3 nap / oldal)
-      const daysPerPage = _isPhone() ? 3 : 7;
+      const daysPerPage = _isPhone() ? 5 : 7;
       const totalPages = Math.max(1, Math.ceil(7 / daysPerPage));
       UI_PAGES.week = _clamp(UI_PAGES.week, 0, totalPages - 1);
       const start = UI_PAGES.week * daysPerPage;
