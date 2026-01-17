@@ -347,7 +347,6 @@
     .panelBody{
       padding: 12px;
       overflow:auto;
-      -webkit-overflow-scrolling: touch;
       max-height: 100%;
       flex: 1 1 auto;
       min-height:0;
@@ -549,15 +548,14 @@
       display:flex;
       flex-direction:column;
     }
-    .paperBody{ padding: 16px 18px;
-      overflow:auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-      flex:1 1 auto;
-      min-height:0;
-      padding-bottom: calc(24px + env(safe-area-inset-bottom));
-      scroll-padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+    .paperBody{ padding: 16px 18px; overflow:auto; flex:1 1 auto; min-height:0;
+      /* Extra bottom space so the last task is fully visible above the phone safe-area */
+      padding-bottom: calc(28px + env(safe-area-inset-bottom));
+      scroll-padding-bottom: calc(28px + env(safe-area-inset-bottom));
+    }
 
+    /* Spacer inside the scroll area to prevent the last item from being cut off */
+    #paperList::after{ content:""; display:block; height: calc(32px + env(safe-area-inset-bottom)); }
     
     /* prevent text selection on tasks */
     .paperItem, .paperItem *{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
@@ -928,7 +926,6 @@
     .timelineBody{
       flex:1 1 auto;
       overflow:auto;
-      -webkit-overflow-scrolling: touch;
       position:relative;
       padding: 14px 12px 28px;
       min-height:0;
@@ -1000,8 +997,7 @@
     .blockTask .del:hover{ background: rgba(255,80,80,0.10); }
 
     /* Month picker tiles */
-    .monthGrid{ flex:1 1 auto; display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; padding:14px; overflow:auto;
-      -webkit-overflow-scrolling: touch; }
+    .monthGrid{ flex:1 1 auto; display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; padding:14px; overflow:auto; }
     @media (max-width: 980px){ .monthGrid{ grid-template-columns: repeat(2, 1fr); } }
     .monthTile{
       border-radius: 22px;
@@ -1083,7 +1079,11 @@
       .weekWide{ overflow:auto !important; }
       .scrollPad{ padding-bottom:12px !important; }
 
-      .paperBody{ padding:14px 14px 12px; }
+      .paperBody{
+        padding:14px 14px 12px;
+        padding-bottom: calc(28px + env(safe-area-inset-bottom));
+        scroll-padding-bottom: calc(28px + env(safe-area-inset-bottom));
+      }
       .paperItem{ padding:10px; border-radius:16px; }
       .paperItem.done::after{ left:34px; right:56px; top:20px; }
       .paperDel{ padding:6px 8px; font-size:10px; }
@@ -1111,9 +1111,7 @@
     .paperWrap{ display:flex; flex-direction:column; gap:12px; }
     .paperGrid.single{ flex:1 1 auto; min-height:0; display:flex; }
     .paperGrid.single .paperPanel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-    .paperGrid.single .paperBody{ flex:1 1 auto; min-height:0; overflow:auto;
-      -webkit-overflow-scrolling: touch;
-      -webkit-overflow-scrolling: touch; }
+    .paperGrid.single .paperBody{ flex:1 1 auto; min-height:0; overflow:auto; }
 
     .formWrap{ width:100%; height:100%; display:flex; flex-direction:column; gap:12px; }
     .formGrid.single{ flex:1 1 auto; min-height:0; display:flex; }
@@ -1487,18 +1485,6 @@
       try{ if(document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur(); }catch{}
       try{ window.scrollTo(0,0); }catch{}
     }
-
-    function focusSoon(el){
-      if(!el) return;
-      // iOS: focus needs to happen right after navigation; RAF helps after view animation
-      requestAnimationFrame(()=>{
-        requestAnimationFrame(()=>{
-          try{ el.focus({preventScroll:true}); }catch{ try{ el.focus(); }catch{} }
-          try{ el.scrollIntoView({block:"center", inline:"nearest"}); }catch{}
-        });
-      });
-    }
-
 
     // -------------------------
     // Storage keys
@@ -1890,16 +1876,20 @@
       updateAutoP1Hint();
       renderListToggles();
     }
-    function openAddPage(){
+    function openAddPage(autofocus=true){
       listAddMode = currentMode;
       listAddPrio = "P2";
       renderListToggles();
       updateAutoP1Hint();
       show("add");
-      focusSoon(tTitle);
+      if(autofocus){
+        try{ tTitle.focus({preventScroll:true}); }catch{ try{ tTitle.focus(); }catch{} }
+        // small fallback for browsers that need a tick
+        setTimeout(()=>{ try{ tTitle.focus({preventScroll:true}); }catch{ try{ tTitle.focus(); }catch{} } }, 0);
+      }
     }
 
-    function openCalAddPage(){
+    function openCalAddPage(autofocus=true){
       show("caladd");
       // alapérték: kiválasztott nap, ha van
       const last = getLastSelectedDay();
@@ -1907,8 +1897,12 @@
         try{ document.getElementById("cDate").value = last; }catch{}
         try{ document.getElementById("selDatePill").textContent = "dátum: " + last; }catch{}
       }
-      // fókusz (kis késleltetés, animáció miatt)
-      focusSoon(document.getElementById("cTitle"));
+      // fókusz: user-gesture-ből hívva azonnal fel tudja hozni a billentyűzetet
+      if(autofocus){
+        const ct = document.getElementById("cTitle");
+        try{ ct.focus({preventScroll:true}); }catch{ try{ ct.focus(); }catch{} }
+        setTimeout(()=>{ try{ ct.focus({preventScroll:true}); }catch{ try{ ct.focus(); }catch{} } }, 0);
+      }
     }
 
     function openCalendarPage(){
@@ -2368,7 +2362,8 @@
     // -------------------------
     // Navigation
     // -------------------------
-    document.getElementById("btnListAdd").addEventListener("click", (e)=> { hideKeyboard(); diveToAdd(e.currentTarget); });
+    // Direct open so the focus is still considered a user gesture (mobile keyboards will pop up)
+    document.getElementById("btnListAdd").addEventListener("click", (e)=> { hideKeyboard(); openAddPage(true); });
     document.getElementById("btnListCalendar").addEventListener("click", (e)=> openCalendar(e.currentTarget));
     document.getElementById("btnCalToList").addEventListener("click", ()=> { hideKeyboard(); renderList(); show("list"); });
 
