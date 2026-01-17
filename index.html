@@ -667,7 +667,7 @@
     @media (max-width: 980px){ .calGrid{ grid-template-columns: 1fr; } }
 
     /* Week stack: range bars + day grid */
-    .weekStack{ display:flex; flex-direction:column; gap:12px; min-height:0; flex:1 1 auto; }
+    .weekStack{ display:flex; flex-direction:column; gap:12px; }
 
     .rangeLayer{
       display:grid;
@@ -712,7 +712,6 @@
       flex-direction:column;
       gap: 12px;
       padding: 12px;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom) + 88px);
       overflow-y:auto;
       overflow-x:hidden;
       -webkit-overflow-scrolling: touch;
@@ -1145,7 +1144,21 @@
     /* desktopon is látszódhat, mobilon a media query úgyis kezeli */
     .calSeg{ display:flex; }
     #calPanelWeek, #view-caladd{ display:flex; flex-direction:column; }
-    </style>
+    
+/* === FIX: ensure last day in calendar week is fully scrollable === */
+.weekWide{
+  padding-bottom: calc(48px + env(safe-area-inset-bottom)) !important;
+  scroll-padding-bottom: calc(48px + env(safe-area-inset-bottom)) !important;
+}
+.weekWide::after{
+  content:"";
+  display:block;
+  height: calc(32px + env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
+/* === END FIX === */
+
+</style>
 </head>
 <body>
   <div class="noise"></div>
@@ -1769,9 +1782,6 @@
     function deleteCalEventById(id){
       const all = loadCalEvents().filter(e => e.id !== id);
       saveCalEvents(all);
-
-      // a frissen mentett dátum legyen a következő hozzáadás alapja is
-      setLastSelectedDay(selectedDate);
     }
 
     // -------------------------
@@ -2663,8 +2673,6 @@
 
         day.addEventListener("click", () => {
           selectedDate = ymd;
-          // Egyetlen érintés/kattintás már "kijelölés" → ezt használjuk a hozzáadás alap dátumának is
-          setLastSelectedDay(ymd);
           UI_PAGES.cal = 0;
           renderCalendarWeek();
           renderSelectedDayTasks();
@@ -2776,10 +2784,7 @@
 
       cTitle.value = "";
       cTime.value = "";
-      // Mentés után vissza a naptárhoz
-      hideKeyboard();
-      show("calendar");
-      setCalTab('week');
+      cTitle.focus();
     }
 
     btnCalAddTask.addEventListener("click", addCalendarEvent);
