@@ -490,7 +490,7 @@
       background: rgba(0,0,0,0.22);
       color: rgba(255,255,255,0.90);
       padding: 12px 14px;
-      font-size: 14px;
+      font-size: 16px;
       outline:none;
       transition: border-color 200ms var(--ease), background 200ms var(--ease);
     }
@@ -1034,8 +1034,8 @@
       .weekWide{ gap:10px; grid-template-columns:1fr !important; }
       .rangeLayer{ display:none !important; }
       .calSeg{ display:flex; width:100%; }
-      #calPanelWeek, #calPanelForm{ display:none; }
-      #calPanelWeek.calShow, #calPanelForm.calShow{ display:flex; flex-direction:column; }
+      #calPanelWeek, #view-caladd{ display:none; }
+      #calPanelWeek.calShow, #view-caladd.calShow{ display:flex; flex-direction:column; }
       .dayWide{ min-height:84px; padding:10px; border-radius:18px; }
       .dayWideTop .w{ font-size:11px; }
       .dayWideTop .d{ font-size:11px; }
@@ -1078,13 +1078,13 @@
       .btn{ padding: 10px 12px; font-size: 12px; border-radius: 14px; }
       .seg{ border-radius: 16px; }
       .seg button{ padding: 9px 10px; font-size: 11px; }
-      .paperPanel .panelHead .h{ font-size: 14px; }
+      .paperPanel .panelHead .h{ font-size: 16px; }
     }
 
   
     /* Calendar tab visibility */
     .calSeg{ display:none; }
-    #calPanelWeek, #calPanelForm{ display:flex; flex-direction:column; }
+    #calPanelWeek, #view-caladd{ display:flex; flex-direction:column; }
     </style>
 </head>
 <body>
@@ -1151,6 +1151,15 @@
       </div>
 
       <!-- LIST VIEW -->
+      <!-- SPLASH (betöltő) -->
+      <section class="view" id="view-splash">
+        <div class="splashWrap splashEnter">
+          <div class="kicker">Zsolt adatbázisa</div>
+          <h1 class="title">Betöltés…</h1>
+          <div class="bar"><i></i></div>
+        </div>
+      </section>
+
       <section class="view active" id="view-list">
         <div class="paperWrap fullPage">
           <div class="topbar mobileTop">
@@ -1253,54 +1262,30 @@
         </div>
       </section>
 
-      <!-- CALENDAR VIEW -->
-      <section class="view" id="view-calendar">
-        <div class="calWrap">
-          <div class="topbar">
-            <div class="brand">
-              <div class="brandBadge">📅</div>
-              <div class="brandText">
-                <div class="small">Zsolt adatbázisa</div>
-                <div class="big" id="calTitle">Naptár</div>
+      <!-- CALENDAR ADD (külön oldal) -->
+      <section class="view zoom-enter" id="view-caladd">
+        <div class="fullPage">
+          <div class="mobileTop">
+            <div class="topbar" style="padding:0; border:0; background:transparent;">
+              <div class="brand">
+                <div class="brandBadge">＋</div>
+                <div class="brandText">
+                  <div class="small">Zsolt adatbázisa</div>
+                  <div class="big">Naptár feladat</div>
+                </div>
               </div>
-            </div>
-            <div class="actions">
-              <div class="seg calSeg" id="calSeg">
-                <button id="segCalWeek" class="active"><span>🗓️</span><span>Hét</span></button>
-                <button id="segCalAdd"><span>＋</span><span>Feladat</span></button>
+              <div class="actions" style="gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+                <button class="btn" id="btnCalAddBack">Vissza</button>
+                <button class="btn" id="btnCalAddToList">Lista</button>
               </div>
-              <button class="btn" id="btnCalToList">Lista</button>
             </div>
           </div>
 
-          <div class="calGrid">
-            <div class="panel" id="calPanelWeek">
-              <div class="panelHead" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
-                <div>
-                  <div class="cap">naptár</div>
-                  <div class="h" id="calWeekLabel">Heti nézet</div>
-                </div>
-                <div class="actions" style="gap:8px;">
-                  <button class="btn" id="btnPrevWeek">◀</button>
-                  <button class="btn" id="btnTodayMonth">Ma</button>
-                  <button class="btn" id="btnNextWeek">▶</button>
-                </div>
-              </div>
-
-              <div class="panelBody scrollPad">
-                <div class="weekStack">
-                  <div class="rangeLayer" id="rangeLayer"></div>
-                  <div class="weekWide" id="weekWide"></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="panel" id="calPanelForm">
-              <div class="panelHead">
+          <div class="formPanel panel" style="flex:1 1 auto; min-height:0; overflow:hidden;">
+            <div class="panelHead">
                 <div class="cap">bevitel</div>
-                <div class="h">Naptár-feladat</div>
-              </div>
-              <div class="panelBody scrollPad" style="padding:14px;">
+            <div class="panelBody" style="padding:14px; flex:1 1 auto; min-height:0; overflow:hidden;">
+              
                 <div class="pillRow">
                   <div class="pill">naptár adatbázis • localStorage</div>
                   <div class="pill" id="selDatePill">dátum: —</div>
@@ -1357,10 +1342,57 @@
 
                 <div class="smallNote" id="calSyncNote"></div>
               </div>
+            
             </div>
           </div>
         </div>
       </section>
+
+
+      <!-- CALENDAR VIEW -->
+      <section class="view" id="view-calendar">
+        <div class="fullPage" style="padding-top: calc(12px + env(safe-area-inset-top));">
+          <div class="mobileTop">
+            <div class="topbar" style="padding:0; border:0; background:transparent;">
+              <div class="brand">
+                <div class="brandBadge">📅</div>
+                <div class="brandText">
+                  <div class="small">Zsolt adatbázisa</div>
+                  <div class="big" id="calTitle">Naptár</div>
+                </div>
+              </div>
+              <div class="actions" style="gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+                <div class="seg calSeg" id="calSeg">
+                  <button id="segCalWeek" class="active"><span>🗓️</span><span>Hét</span></button>
+                  <button id="segCalAdd"><span>＋</span><span>Feladat</span></button>
+                </div>
+                <button class="btn" id="btnCalToList">Lista</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="listPanel panel" style="flex:1 1 auto; min-height:0; overflow:hidden;">
+            <div class="panelHead" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
+              <div>
+                <div class="cap">naptár</div>
+                <div class="h" id="calWeekLabel">Heti nézet</div>
+              </div>
+              <div class="actions" style="gap:8px;">
+                <button class="btn" id="btnPrevWeek">◀</button>
+                <button class="btn" id="btnTodayMonth">Ma</button>
+                <button class="btn" id="btnNextWeek">▶</button>
+              </div>
+            </div>
+            <div class="panelBody" style="flex:1 1 auto; min-height:0; overflow:hidden; padding: 0;">
+              <div class="weekStack" style="height:100%;">
+                <div class="rangeLayer" id="rangeLayer"></div>
+                <div class="weekWide" id="weekWide"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
 
     </div>
   </div>
@@ -1370,16 +1402,25 @@
     // Views + state
     // -------------------------
     const views = {
+      splash: document.getElementById("view-splash"),
       list: document.getElementById("view-list"),
       add: document.getElementById("view-add"),
       calendar: document.getElementById("view-calendar"),
+      caladd: document.getElementById("view-caladd"),
     };
     function show(name){
       Object.values(views).forEach(v => v.classList.remove("active"));
       views[name].classList.add("active");
     }
     let currentMode = "business";
-    show("list");
+    show("splash");
+    // betöltő képernyő után indulunk a VÁLL. listával
+    setTimeout(()=>{ show("list"); }, 1200);
+
+    function hideKeyboard(){
+      try{ if(document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur(); }catch{}
+      try{ window.scrollTo(0,0); }catch{}
+    }
 
     // -------------------------
     // Storage keys
@@ -1387,6 +1428,13 @@
     const LS_LIST_KEY = "zsolt_db_tasks_list_v7";
     const LS_CAL_KEY  = "zsolt_db_tasks_calendar_v4";
     const LS_DAY_KEY  = "zsolt_db_last_day_v7";
+
+    function setLastSelectedDay(ymd){
+      try{ localStorage.setItem(LS_DAY_KEY, ymd); }catch{}
+    }
+    function getLastSelectedDay(){
+      try{ return localStorage.getItem(LS_DAY_KEY) || ""; }catch{ return ""; }
+    }
     // -------------------------
     // File-backed storage (Electron) fallback to localStorage (browser)
     // -------------------------
@@ -1763,7 +1811,6 @@
       listAddMode = currentMode;
       updateAutoP1Hint();
       renderListToggles();
-      tTitle.focus();
     }
     function openAddPage(){
       listAddMode = currentMode;
@@ -1773,6 +1820,31 @@
       show("add");
       setTimeout(()=> tTitle.focus(), 120);
     }
+
+    function openCalAddPage(){
+      show("caladd");
+      // alapérték: kiválasztott nap, ha van
+      const last = getLastSelectedDay();
+      if(last){
+        try{ document.getElementById("cDate").value = last; }catch{}
+        try{ document.getElementById("selDatePill").textContent = "dátum: " + last; }catch{}
+      }
+      // fókusz (kis késleltetés, animáció miatt)
+      setTimeout(()=>{ try{ document.getElementById("cTitle").focus(); }catch{} }, 120);
+    }
+
+    function openCalendarPage(){
+      show("calendar");
+      renderCalendarWeek();
+    }
+
+    function closeKeyboard(){
+      const ae = document.activeElement;
+      if(ae && typeof ae.blur === "function") ae.blur();
+      // iOS-eken gyakran segít
+      window.scrollTo(0,0);
+    }
+
     function addListTask(){
       const title = (tTitle.value || "").trim();
       if(!title){
@@ -1803,6 +1875,7 @@
       saveListTasks(tasks);
 
       currentMode = task.mode;
+      hideKeyboard();
       renderList();
       show("list");
       clearForm();
@@ -2215,41 +2288,25 @@
     }
     document.getElementById("btnTodayMonth").addEventListener("click", openMonthPicker);
 
-
     // -------------------------
-    // Calendar tabs (phone)
+    // Calendar quick buttons
     // -------------------------
-    const calPanelWeek = document.getElementById('calPanelWeek');
-    const calPanelForm = document.getElementById('calPanelForm');
     const segCalWeek = document.getElementById('segCalWeek');
     const segCalAdd  = document.getElementById('segCalAdd');
-
-    function setCalTab(which){
-      if(!_isPhone()){
-        // Desktop: mindkettő látszik
-        if(calPanelWeek) calPanelWeek.classList.add('calShow');
-        if(calPanelForm) calPanelForm.classList.add('calShow');
-        return;
-      }
-      const showWeek = (which === 'week');
-      if(calPanelWeek) calPanelWeek.classList.toggle('calShow', showWeek);
-      if(calPanelForm) calPanelForm.classList.toggle('calShow', !showWeek);
-      if(segCalWeek) segCalWeek.classList.toggle('active', showWeek);
-      if(segCalAdd)  segCalAdd.classList.toggle('active', !showWeek);
-    }
-
-    if(segCalWeek) segCalWeek.addEventListener('click', ()=> setCalTab('week'));
-    if(segCalAdd)  segCalAdd.addEventListener('click', ()=> setCalTab('add'));
+    if(segCalWeek) segCalWeek.addEventListener('click', ()=> { hideKeyboard(); openCalendarPage(); });
+    if(segCalAdd)  segCalAdd.addEventListener('click', ()=> { hideKeyboard(); openCalAddPage(); });
 
     // -------------------------
     // Navigation
     // -------------------------
-    document.getElementById("btnListAdd").addEventListener("click", (e)=> diveToAdd(e.currentTarget));
+    document.getElementById("btnListAdd").addEventListener("click", (e)=> { hideKeyboard(); diveToAdd(e.currentTarget); });
     document.getElementById("btnListCalendar").addEventListener("click", (e)=> openCalendar(e.currentTarget));
-    document.getElementById("btnCalToList").addEventListener("click", ()=> { renderList(); show("list"); });
+    document.getElementById("btnCalToList").addEventListener("click", ()=> { hideKeyboard(); renderList(); show("list"); });
 
-    document.getElementById("btnAddBack").addEventListener("click", ()=> { renderList(); show("list"); });
+    document.getElementById("btnAddBack").addEventListener("click", ()=> { hideKeyboard(); renderList(); show("list"); });
     document.getElementById("btnToCalendarFromAdd").addEventListener("click", (e)=> openCalendar(e.currentTarget));
+    document.getElementById("btnCalAddBack").addEventListener("click", ()=> { hideKeyboard(); openCalendarPage(); });
+    document.getElementById("btnCalAddToList").addEventListener("click", ()=> { hideKeyboard(); renderList(); show("list"); });
 
     segBusiness.addEventListener("click", ()=> enterMode("business"));
     segPersonal.addEventListener("click", ()=> enterMode("personal"));
@@ -2695,6 +2752,7 @@
     });
 
     function openDayView(dateYMD){
+      setLastSelectedDay(dateYMD);
       ensureTimelineHours();
       const dt = new Date(dateYMD + "T00:00:00");
       dayViewTitle.textContent = formatHU(dt, { year:"numeric", month:"long", day:"2-digit", weekday:"long" });
