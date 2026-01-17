@@ -2201,7 +2201,7 @@
       const singles = sortSingles(getCalSinglesForDate(selectedDate));
       const ranges = getCalRangesIntersecting(selectedDate, selectedDate);
 
-      selDatePill.textContent = "dátum: " + selectedDate;
+      selDatePill.textContent = "dátum: " + formatHU(parseYMD(selectedDate), { year:"numeric", month:"long", day:"2-digit", weekday:"long" });
       cDate.value = selectedDate;
 
       if(isTodayDate(selectedDate)){
@@ -2234,7 +2234,7 @@
           const when = it.time && it.time.trim() ? it.time : "—";
           el.innerHTML = `
             <div class="t">${escapeHtml(it.title)}</div>
-            <div class="m"><span>idő: ${escapeHtml(when)}</span><span>•</span><span>${escapeHtml(it.kind==="range" ? "TÖBB NAP" : "EGY NAP")}</span></div>
+            <div class="m"><span class="chip">${escapeHtml(when)}</span><span class="chip">${escapeHtml(it.kind==="range" ? "TÖBB NAP" : "EGY NAP")}</span></div>
             <button class="del" data-del="${it.id}">TÖRLÉS</button>
           `;
           dayTaskList.appendChild(el);
@@ -2512,9 +2512,8 @@
         el.innerHTML = `
           <div class="t">${escapeHtml(it.title)}</div>
           <div class="m">
-            <span>idő: ${escapeHtml(it.when)}</span>
-            <span>•</span>
-            <span>${escapeHtml(it.kind === "range" ? "TÖBB NAP" : "EGY NAP")}</span>
+            <span class="chip">${escapeHtml(it.when)}</span>
+            <span class="chip">${escapeHtml(it.kind === "range" ? "TÖBB NAP" : "EGY NAP")}</span>
           </div>
           <button class="del" data-del="${it.id}">TÖRLÉS</button>
         `;
@@ -2673,6 +2672,7 @@
 
         day.addEventListener("click", () => {
           selectedDate = ymd;
+          setLastSelectedDay(ymd);
           UI_PAGES.cal = 0;
           renderCalendarWeek();
           renderSelectedDayTasks();
@@ -2692,6 +2692,7 @@
 
     function openCalendar(){
       selectedDate = todayYMD();
+      setLastSelectedDay(selectedDate);
       calWeekStart = mondayStart(new Date());
       rangeOn = false;
       multiPanel.style.display = "none";
