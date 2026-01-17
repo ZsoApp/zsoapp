@@ -715,9 +715,19 @@
       overflow-y:auto;
       overflow-x:hidden;
       -webkit-overflow-scrolling: touch;
+    
+      padding-bottom: calc(48px + env(safe-area-inset-bottom));
+      scroll-padding-bottom: calc(48px + env(safe-area-inset-bottom));
     }
     .weekWide::-webkit-scrollbar{ width: 0; }
-    .dayWide{
+    
+    .weekWide::after{
+      content:"";
+      display:block;
+      height: calc(32px + env(safe-area-inset-bottom));
+      flex-shrink: 0;
+    }
+.dayWide{
       flex: 0 0 auto;
       width: 100%;
 
@@ -803,7 +813,29 @@
       flex: 0 0 auto;
     }
 
-    .miniPill{
+    
+    .calTask .m .chipMeta{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.75);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .calTask .m .chipMeta.time{
+      border-color: rgba(255,255,255,0.16);
+      background: rgba(0,0,0,0.25);
+      color: rgba(255,255,255,0.85);
+    }
+.miniPill{
       position:absolute;
       right: 10px;
       bottom: 10px;
@@ -1144,21 +1176,7 @@
     /* desktopon is látszódhat, mobilon a media query úgyis kezeli */
     .calSeg{ display:flex; }
     #calPanelWeek, #view-caladd{ display:flex; flex-direction:column; }
-    
-/* === FIX: ensure last day in calendar week is fully scrollable === */
-.weekWide{
-  padding-bottom: calc(48px + env(safe-area-inset-bottom)) !important;
-  scroll-padding-bottom: calc(48px + env(safe-area-inset-bottom)) !important;
-}
-.weekWide::after{
-  content:"";
-  display:block;
-  height: calc(32px + env(safe-area-inset-bottom));
-  flex-shrink: 0;
-}
-/* === END FIX === */
-
-</style>
+    </style>
 </head>
 <body>
   <div class="noise"></div>
@@ -1905,12 +1923,15 @@
 
     function openCalAddPage(autofocus=true){
       show("caladd");
-      // alapérték: kiválasztott nap, ha van
-      const last = getLastSelectedDay();
-      if(last){
-        try{ document.getElementById("cDate").value = last; }catch{}
-        try{ document.getElementById("selDatePill").textContent = "dátum: " + last; }catch{}
-      }
+      // alapérték: a jelenleg kijelölt nap (ha nincs, akkor az utolsó)
+      const base = (selectedDate && selectedDate.trim()) ? selectedDate : (getLastSelectedDay() || todayYMD());
+      selectedDate = base;
+      setLastSelectedDay(base);
+      try{ cDate.value = base; }catch{}
+      try{ selDatePill.textContent = "dátum: " + prettyCalDate(base); }catch{}
+      try{ UI_PAGES.cal = 0; }catch{}
+      try{ renderSelectedDayTasks(); }catch{}
+
       // fókusz: user-gesture-ből hívva azonnal fel tudja hozni a billentyűzetet
       if(autofocus){
         const ct = document.getElementById("cTitle");
@@ -2166,6 +2187,10 @@
     renderCalToggle();
 
     function formatHU(date, opts){ return date.toLocaleDateString("hu-HU", opts); }
+    function prettyCalDate(ymd){
+      const d = parseYMD(ymd);
+      return formatHU(d, { year:"numeric", month:"long", day:"2-digit", weekday:"long" });
+    }
     function mondayStart(d){
       const x = new Date(d);
       const day = x.getDay();
@@ -2201,7 +2226,7 @@
       const singles = sortSingles(getCalSinglesForDate(selectedDate));
       const ranges = getCalRangesIntersecting(selectedDate, selectedDate);
 
-      selDatePill.textContent = "dátum: " + formatHU(parseYMD(selectedDate), { year:"numeric", month:"long", day:"2-digit", weekday:"long" });
+      selDatePill.textContent = "dátum: " + prettyCalDate(selectedDate);
       cDate.value = selectedDate;
 
       if(isTodayDate(selectedDate)){
@@ -2234,7 +2259,7 @@
           const when = it.time && it.time.trim() ? it.time : "—";
           el.innerHTML = `
             <div class="t">${escapeHtml(it.title)}</div>
-            <div class="m"><span class="chip">${escapeHtml(when)}</span><span class="chip">${escapeHtml(it.kind==="range" ? "TÖBB NAP" : "EGY NAP")}</span></div>
+            <div class="m"><span>idő: ${escapeHtml(when)}</span><span>•</span><span>${escapeHtml(it.kind==="range" ? "TÖBB NAP" : "EGY NAP")}</span></div>
             <button class="del" data-del="${it.id}">TÖRLÉS</button>
           `;
           dayTaskList.appendChild(el);
@@ -2477,7 +2502,7 @@
       const singles = sortSingles(getCalSinglesForDate(selectedDate));
       const ranges = getCalRangesIntersecting(selectedDate, selectedDate);
 
-      selDatePill.textContent = "dátum: " + selectedDate;
+      selDatePill.textContent = "dátum: " + prettyCalDate(selectedDate);
       cDate.value = selectedDate;
 
       if(isTodayDate(selectedDate)){
@@ -2512,8 +2537,8 @@
         el.innerHTML = `
           <div class="t">${escapeHtml(it.title)}</div>
           <div class="m">
-            <span class="chip">${escapeHtml(it.when)}</span>
-            <span class="chip">${escapeHtml(it.kind === "range" ? "TÖBB NAP" : "EGY NAP")}</span>
+            <span class="chipMeta time">${escapeHtml(it.when)}</span>
+            <span class="chipMeta">${escapeHtml(it.kind === "range" ? "TÖBB NAP" : "EGY NAP")}</span>
           </div>
           <button class="del" data-del="${it.id}">TÖRLÉS</button>
         `;
@@ -2692,7 +2717,6 @@
 
     function openCalendar(){
       selectedDate = todayYMD();
-      setLastSelectedDay(selectedDate);
       calWeekStart = mondayStart(new Date());
       rangeOn = false;
       multiPanel.style.display = "none";
@@ -2795,6 +2819,7 @@
     cDate.addEventListener("change", () => {
       if(cDate.value){
         selectedDate = cDate.value;
+        setLastSelectedDay(selectedDate);
         UI_PAGES.cal = 0;
         renderCalendarWeek();
         renderSelectedDayTasks();
