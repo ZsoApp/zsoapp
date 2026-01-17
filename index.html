@@ -347,6 +347,7 @@
     .panelBody{
       padding: 12px;
       overflow:auto;
+      -webkit-overflow-scrolling: touch;
       max-height: 100%;
       flex: 1 1 auto;
       min-height:0;
@@ -548,7 +549,15 @@
       display:flex;
       flex-direction:column;
     }
-    .paperBody{ padding: 16px 18px; overflow:auto; flex:1 1 auto; min-height:0; padding-bottom:34px; }
+    .paperBody{ padding: 16px 18px;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      flex:1 1 auto;
+      min-height:0;
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
+      scroll-padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+
     
     /* prevent text selection on tasks */
     .paperItem, .paperItem *{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
@@ -919,6 +928,7 @@
     .timelineBody{
       flex:1 1 auto;
       overflow:auto;
+      -webkit-overflow-scrolling: touch;
       position:relative;
       padding: 14px 12px 28px;
       min-height:0;
@@ -990,7 +1000,8 @@
     .blockTask .del:hover{ background: rgba(255,80,80,0.10); }
 
     /* Month picker tiles */
-    .monthGrid{ flex:1 1 auto; display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; padding:14px; overflow:auto; }
+    .monthGrid{ flex:1 1 auto; display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; padding:14px; overflow:auto;
+      -webkit-overflow-scrolling: touch; }
     @media (max-width: 980px){ .monthGrid{ grid-template-columns: repeat(2, 1fr); } }
     .monthTile{
       border-radius: 22px;
@@ -1100,7 +1111,9 @@
     .paperWrap{ display:flex; flex-direction:column; gap:12px; }
     .paperGrid.single{ flex:1 1 auto; min-height:0; display:flex; }
     .paperGrid.single .paperPanel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-    .paperGrid.single .paperBody{ flex:1 1 auto; min-height:0; overflow:auto; }
+    .paperGrid.single .paperBody{ flex:1 1 auto; min-height:0; overflow:auto;
+      -webkit-overflow-scrolling: touch;
+      -webkit-overflow-scrolling: touch; }
 
     .formWrap{ width:100%; height:100%; display:flex; flex-direction:column; gap:12px; }
     .formGrid.single{ flex:1 1 auto; min-height:0; display:flex; }
@@ -1474,6 +1487,18 @@
       try{ if(document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur(); }catch{}
       try{ window.scrollTo(0,0); }catch{}
     }
+
+    function focusSoon(el){
+      if(!el) return;
+      // iOS: focus needs to happen right after navigation; RAF helps after view animation
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
+          try{ el.focus({preventScroll:true}); }catch{ try{ el.focus(); }catch{} }
+          try{ el.scrollIntoView({block:"center", inline:"nearest"}); }catch{}
+        });
+      });
+    }
+
 
     // -------------------------
     // Storage keys
@@ -1871,7 +1896,7 @@
       renderListToggles();
       updateAutoP1Hint();
       show("add");
-      setTimeout(()=> tTitle.focus(), 120);
+      focusSoon(tTitle);
     }
 
     function openCalAddPage(){
@@ -1883,7 +1908,7 @@
         try{ document.getElementById("selDatePill").textContent = "dátum: " + last; }catch{}
       }
       // fókusz (kis késleltetés, animáció miatt)
-      setTimeout(()=>{ try{ document.getElementById("cTitle").focus(); }catch{} }, 120);
+      focusSoon(document.getElementById("cTitle"));
     }
 
     function openCalendarPage(){
