@@ -667,7 +667,7 @@
     @media (max-width: 980px){ .calGrid{ grid-template-columns: 1fr; } }
 
     /* Week stack: range bars + day grid */
-    .weekStack{ display:flex; flex-direction:column; gap:12px; }
+    .weekStack{ display:flex; flex-direction:column; gap:12px; min-height:0; flex:1 1 auto; }
 
     .rangeLayer{
       display:grid;
@@ -712,6 +712,7 @@
       flex-direction:column;
       gap: 12px;
       padding: 12px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom) + 88px);
       overflow-y:auto;
       overflow-x:hidden;
       -webkit-overflow-scrolling: touch;
@@ -1768,6 +1769,9 @@
     function deleteCalEventById(id){
       const all = loadCalEvents().filter(e => e.id !== id);
       saveCalEvents(all);
+
+      // a frissen mentett dátum legyen a következő hozzáadás alapja is
+      setLastSelectedDay(selectedDate);
     }
 
     // -------------------------
@@ -2659,6 +2663,8 @@
 
         day.addEventListener("click", () => {
           selectedDate = ymd;
+          // Egyetlen érintés/kattintás már "kijelölés" → ezt használjuk a hozzáadás alap dátumának is
+          setLastSelectedDay(ymd);
           UI_PAGES.cal = 0;
           renderCalendarWeek();
           renderSelectedDayTasks();
@@ -2770,7 +2776,10 @@
 
       cTitle.value = "";
       cTime.value = "";
-      cTitle.focus();
+      // Mentés után vissza a naptárhoz
+      hideKeyboard();
+      show("calendar");
+      setCalTab('week');
     }
 
     btnCalAddTask.addEventListener("click", addCalendarEvent);
