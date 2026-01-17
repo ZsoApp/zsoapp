@@ -699,15 +699,23 @@
       flex: 0 0 auto;
     }
 
-    /* ✅ FEJLESZTÉS: minden nap doboza legyen akkora, mint a legnagyobb */
+    /* WEEK GRID: 7 nap (vízszintesen görgethető, kényelmes mobilon) */
     .weekWide{
-      display:grid;
-      grid-template-columns: repeat(7, 1fr);
+      display:flex;
       gap: 12px;
-      align-items:stretch; /* <- ettől egy sorban mind ugyanakkora magasság lesz */
+      padding: 12px;
+      overflow-x:auto;
+      overflow-y:hidden;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x mandatory;
     }
-
+    .weekWide::-webkit-scrollbar{ height: 0; }
     .dayWide{
+      flex: 0 0 240px;
+      min-width: 220px;
+      max-width: 280px;
+      scroll-snap-align: start;
+
       border-radius: 20px;
       border: 1px solid rgba(255,255,255,0.10);
       background: rgba(0,0,0,0.18);
@@ -719,9 +727,9 @@
       display:flex;
       flex-direction:column;
 
-      min-height: 260px;
-      height: 100%; /* <- a grid sor magasságát felveszi (a legmagasabb naphoz igazodik) */
-      overflow: hidden;
+      min-height: 180px;
+      height: auto;
+      overflow: visible;
     }
     .dayWide:hover{
       transform: translateY(-2px);
@@ -756,6 +764,38 @@
       font-size: 12px;
       color: rgba(255,255,255,0.44);
       font-family: var(--mono);
+    }
+
+    /* Feladatok a naptár rublikáiban: egymás mellé, több sorban, a kártya nő */
+    .dayTasksWrap{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+      align-content:flex-start;
+    }
+    .dayWide .calTask{
+      margin: 0;
+      padding: 6px 8px;
+      border-radius: 12px;
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      max-width: 100%;
+    }
+    .dayWide .calTask .t{
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dayWide .calTask .m{
+      margin: 0;
+      font-size: 10px;
+      letter-spacing: .10em;
+      opacity: 0.75;
+      flex: 0 0 auto;
     }
 
     .miniPill{
@@ -1038,8 +1078,7 @@
       .paperDel{ padding:6px 8px; font-size:10px; }
       .paperTitle{ font-size:14px; }
       .paperMeta{ font-size:10px; letter-spacing:.08em; }
-
-      .weekWide{ gap:10px; grid-template-columns:1fr !important; }
+      .weekWide{ gap:10px; padding:10px; }
       .rangeLayer{ display:none !important; }
       .calSeg{ display:flex; width:100%; }
       #calPanelWeek, #view-caladd{ display:none; }
@@ -1047,7 +1086,7 @@
       .dayWide{ min-height:84px; padding:10px; border-radius:18px; }
       .dayWideTop .w{ font-size:11px; }
       .dayWideTop .d{ font-size:11px; }
-      .dayWide .calTask{ display:none; }
+      .dayWide .calTask{ display:inline-flex; }
 
       .rangeBar{ height:36px; padding:8px 10px; border-radius:14px; }
       .miniPill{ font-size:10px; padding:5px 9px; }
@@ -2577,13 +2616,8 @@
       calWeekLabel.textContent = `${formatHU(weekLabelStart,{month:"long", day:"2-digit"})} — ${formatHU(weekLabelEnd,{month:"long", day:"2-digit"})}`;
 
       renderRangeBarsForWeek(weekFrom, weekTo);
-
-      // Phone: 1 oszlop + lapozás (3 nap / oldal)
-      const daysPerPage = _isPhone() ? 5 : 7;
-      const totalPages = Math.max(1, Math.ceil(7 / daysPerPage));
-      UI_PAGES.week = _clamp(UI_PAGES.week, 0, totalPages - 1);
-      const start = UI_PAGES.week * daysPerPage;
-      const renderDays = _isPhone() ? weekDays.slice(start, start + daysPerPage) : weekDays;
+      // 7 napot mindig egyszerre kezelünk; a hétváltás a ◀/▶ gombokkal történik
+      const renderDays = weekDays;
 
       for(const ymd of renderDays){
         const isToday = ymd === todayYMD();
@@ -2602,11 +2636,8 @@
           <div class="d">${formatHU(d,{month:"2-digit", day:"2-digit"})}</div>
         `;
         day.appendChild(head);
-
         const taskWrap = document.createElement("div");
-        taskWrap.style.display = "flex";
-        taskWrap.style.flexDirection = "column";
-        taskWrap.style.gap = "8px";
+        taskWrap.className = "dayTasksWrap";
         day.appendChild(taskWrap);
 
         const singlesAll = sortSingles(getCalSinglesForDate(ymd));
@@ -2618,8 +2649,8 @@
           block.className = "calTask";
           const when = (t.time && t.time.trim()) ? t.time : "—";
           block.innerHTML = `
+            <div class="m">${escapeHtml(when)}</div>
             <div class="t">${escapeHtml(t.title)}</div>
-            <div class="m"><span>${escapeHtml(when)}</span><span>•</span><span>${escapeHtml(modeIcon(t.mode||"personal"))}</span></div>
           `;
           taskWrap.appendChild(block);
         });
@@ -2645,12 +2676,6 @@
         day.addEventListener("touchcancel", () => { if(lpTimer) clearTimeout(lpTimer); lpTimer=null; }, { passive:true });
 
         weekWide.appendChild(day);
-      }
-
-      // Pager a hét napjaihoz (telefonon)
-      if(_isPhone() && totalPages > 1){
-        weekWide.insertAdjacentHTML('beforeend', _pagerHTML(UI_PAGES.week, totalPages));
-        _wirePager(weekWide, 'week', totalPages, renderCalendarWeek);
       }
     }
 
