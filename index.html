@@ -72,7 +72,7 @@
     .listPanel .panelHead{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
     .listTools{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
     .listTools .smallNote{ margin:0; text-align:right; }
-    .paperBody{ flex:1 1 auto; min-height:0; overflow:hidden; }
+    .paperBody{ flex:1 1 auto; min-height:0; overflow:auto; -webkit-overflow-scrolling: touch; }
 
     .formPanel{ flex:1 1 auto; min-height:0; border-radius: 26px; display:flex; flex-direction:column; }
     .formBody{ padding: 14px; display:flex; flex-direction:column; gap: 12px; overflow:hidden; }
@@ -663,9 +663,9 @@
     .weekStack{ display:flex; flex-direction:column; gap:12px; }
 
     .rangeLayer{
-      display:grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 12px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
       align-items:stretch;
     }
     .rangeBar{
@@ -699,23 +699,19 @@
       flex: 0 0 auto;
     }
 
-    /* WEEK GRID: 7 nap (vízszintesen görgethető, kényelmes mobilon) */
+    /* WEEK GRID: 7 nap (egymás alatt, egy oszlopban) */
     .weekWide{
       display:flex;
+      flex-direction:column;
       gap: 12px;
       padding: 12px;
-      overflow-x:auto;
-      overflow-y:hidden;
+      overflow-y:auto;
+      overflow-x:hidden;
       -webkit-overflow-scrolling: touch;
-      scroll-snap-type: x mandatory;
     }
-    .weekWide::-webkit-scrollbar{ height: 0; }
+    .weekWide::-webkit-scrollbar{ width: 0; }
     .dayWide{
-      flex: 0 0 240px;
-      min-width: 220px;
-      max-width: 280px;
-      scroll-snap-align: start;
-
+      width:100%;
       border-radius: 20px;
       border: 1px solid rgba(255,255,255,0.10);
       background: rgba(0,0,0,0.18);
@@ -727,7 +723,7 @@
       display:flex;
       flex-direction:column;
 
-      min-height: 180px;
+      min-height: 140px;
       height: auto;
       overflow: visible;
     }
@@ -1100,7 +1096,7 @@
     .paperWrap{ display:flex; flex-direction:column; gap:12px; }
     .paperGrid.single{ flex:1 1 auto; min-height:0; display:flex; }
     .paperGrid.single .paperPanel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-    .paperGrid.single .paperBody{ flex:1 1 auto; min-height:0; overflow:hidden; }
+    .paperGrid.single .paperBody{ flex:1 1 auto; min-height:0; overflow:auto; -webkit-overflow-scrolling: touch; }
 
     .formWrap{ width:100%; height:100%; display:flex; flex-direction:column; gap:12px; }
     .formGrid.single{ flex:1 1 auto; min-height:0; display:flex; }
@@ -1997,14 +1993,9 @@
         return;
       }
 
-      const ps = _pageSize("list");
-      const totalPages = Math.max(1, Math.ceil(tasks.length / ps));
-      UI_PAGES.list = _clamp(UI_PAGES.list, 0, totalPages - 1);
-      const start = UI_PAGES.list * ps;
-      const pageTasks = tasks.slice(start, start + ps);
-
+      // Mobil: a lista GÖRGETHETŐ (nem lapozós)
       paperList.innerHTML = "";
-      pageTasks.forEach(task => {
+      tasks.forEach(task => {
         const item = document.createElement("div");
         item.className = "paperItem" + (task.done ? " done" : "");
         item.setAttribute("data-id", task.id);
@@ -2030,150 +2021,17 @@
         paperList.appendChild(item);
       });
 
-      // Pager (no scrolling)
-      paperList.insertAdjacentHTML('beforeend', _pagerHTML(UI_PAGES.list, totalPages));
-      _wirePager(paperList, 'list', totalPages, renderList);
-
       paperList.querySelectorAll("[data-del]").forEach(btn => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
           const id = btn.getAttribute("data-del");
           const remaining = loadListTasks().filter(t => t.id !== id);
           saveListTasks(remaining);
-          // adjust page if we deleted the last item on the last page
-          const newCount = getTasksForMode(currentMode).length;
-          const newTotal = Math.max(1, Math.ceil(newCount / ps));
-          UI_PAGES.list = _clamp(UI_PAGES.list, 0, newTotal - 1);
           renderList();
         });
       });
 
       attachLongPressHandlers();
-    }
-
-    function toggleDone(taskId){
-      const today = todayYMD();
-      const tasks = loadListTasks();
-      const idx = tasks.findIndex(t => t.id === taskId);
-      if(idx < 0) return;
-      const t = tasks[idx];
-      t.done = !t.done;
-      t.doneAt = t.done ? today : null;
-      saveListTasks(tasks);
-      renderList();
-    }
-
-    function attachLongPressHandlers(){
-      const HOLD_MS = 550;
-      paperList.querySelectorAll(".paperItem").forEach(el => {
-        let timer = null;
-        const id = el.getAttribute("data-id");
-
-        const start = (e) => {
-          if(e?.target && e.target.closest && e.target.closest(".paperDel")) return;
-          el.classList.add("hold");
-          timer = setTimeout(() => {
-            el.classList.remove("hold");
-            toggleDone(id);
-          }, HOLD_MS);
-        };
-
-        const cancel = () => {
-          if(timer) clearTimeout(timer);
-          timer = null;
-          el.classList.remove("hold");
-        };
-
-        el.addEventListener("mousedown", start);
-        el.addEventListener("mouseup", cancel);
-        el.addEventListener("mouseleave", cancel);
-        el.addEventListener("mousemove", cancel);
-
-        el.addEventListener("touchstart", (e) => { start(e); }, { passive: true });
-        el.addEventListener("touchend", cancel, { passive: true });
-        el.addEventListener("touchcancel", cancel, { passive: true });
-      });
-    }
-
-    document.getElementById("btnClearAll").addEventListener("click", () => {
-      const ok = confirm("Biztos törlöd az összes feladatot ebben a módban?");
-      if(!ok) return;
-      const remaining = loadListTasks().filter(t => t.mode !== currentMode);
-      saveListTasks(remaining);
-      renderList();
-    });
-
-    function enterMode(mode){
-      currentMode = mode;
-      renderList();
-      show("list");
-    }
-
-    // -------------------------
-    // CALENDAR
-    // -------------------------
-    const weekWide = document.getElementById("weekWide");
-    const rangeLayer = document.getElementById("rangeLayer");
-    const calWeekLabel = document.getElementById("calWeekLabel");
-    const selDatePill = document.getElementById("selDatePill");
-    const calDayTasks = document.getElementById("calDayTasks");
-    const calSyncNote = document.getElementById("calSyncNote");
-
-    const cTitle = document.getElementById("cTitle");
-    const cTime = document.getElementById("cTime");
-    const cDate = document.getElementById("cDate");
-    const btnCalAddTask = document.getElementById("btnCalAddTask");
-    const btnCalClear = document.getElementById("btnCalClear");
-
-    let calWeekStart = mondayStart(new Date());
-    let selectedDate = todayYMD();
-
-    // Range mode inputs
-    let rangeOn = false;
-    const btnMultiToggle = document.getElementById("btnMultiToggle");
-    const multiPanel = document.getElementById("multiPanel");
-    const cFrom = document.getElementById("cFrom");
-    const cTo = document.getElementById("cTo");
-
-    // mode toggle
-    let calAddMode = "personal";
-    const togCalMode = document.getElementById("togCalMode");
-    const togCalModeV = document.getElementById("togCalModeV");
-    function renderCalToggle(){ togCalModeV.textContent = (calAddMode === "business" ? "💼 VÁLL" : "🌿 MAGÁN"); }
-    function cycleCalMode(){ calAddMode = (calAddMode === "business") ? "personal" : "business"; renderCalToggle(); }
-    togCalMode.addEventListener("click", cycleCalMode);
-    renderCalToggle();
-
-    function formatHU(date, opts){ return date.toLocaleDateString("hu-HU", opts); }
-    function mondayStart(d){
-      const x = new Date(d);
-      const day = x.getDay();
-      const diff = (day === 0 ? -6 : 1) - day;
-      x.setDate(x.getDate() + diff);
-      x.setHours(0,0,0,0);
-      return x;
-    }
-
-    // Toggle range UI
-    btnMultiToggle.addEventListener("click", () => {
-      rangeOn = !rangeOn;
-      multiPanel.style.display = rangeOn ? "block" : "none";
-      btnMultiToggle.textContent = rangeOn ? "✅ Több nap" : "📆 Több nap";
-      if(rangeOn){
-        cFrom.value = selectedDate;
-        cTo.value = selectedDate;
-      }
-      renderCalendarWeek();
-    });
-
-    function sortSingles(tasks){
-      return tasks.slice().sort((a,b) => {
-        const ta = (a.time && a.time.trim()) ? a.time : "99:99";
-        const tb = (b.time && b.time.trim()) ? b.time : "99:99";
-        if(ta < tb) return -1;
-        if(ta > tb) return 1;
-        return (a.createdAt||0) - (b.createdAt||0);
-      });
     }
 
     function renderSelectedDayTasks(){
@@ -2409,14 +2267,8 @@
         return;
       }
 
-      const size = _pageSize("list");
-      const totalPages = Math.max(1, Math.ceil(tasks.length / size));
-      UI_PAGES.list = _clamp(UI_PAGES.list, 0, totalPages - 1);
-      const start = UI_PAGES.list * size;
-      const pageTasks = tasks.slice(start, start + size);
-
       paperList.innerHTML = "";
-      pageTasks.forEach(task => {
+      tasks.forEach(task => {
         const item = document.createElement("div");
         item.className = "paperItem" + (task.done ? " done" : "");
         item.setAttribute("data-id", task.id);
@@ -2442,24 +2294,17 @@
         paperList.appendChild(item);
       });
 
-      paperList.insertAdjacentHTML('beforeend', _pagerHTML(UI_PAGES.list, totalPages));
-
       paperList.querySelectorAll("[data-del]").forEach(btn => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
           const id = btn.getAttribute("data-del");
           const remaining = loadListTasks().filter(t => t.id !== id);
           saveListTasks(remaining);
-          // clamp page in case we deleted the last item on the last page
-          const afterCount = getTasksForMode(currentMode).length;
-          const afterPages = Math.max(1, Math.ceil(afterCount / _pageSize("list")));
-          UI_PAGES.list = _clamp(UI_PAGES.list, 0, afterPages - 1);
           renderList();
         });
       });
 
       attachLongPressHandlers();
-      _wirePager(paperList, 'list', totalPages, renderList);
     }
 
     function renderSelectedDayTasks(){
