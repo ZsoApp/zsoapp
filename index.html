@@ -72,7 +72,7 @@
     .listPanel .panelHead{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
     .listTools{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
     .listTools .smallNote{ margin:0; text-align:right; }
-    .paperBody{ flex:1 1 auto; min-height:0; overflow:auto; -webkit-overflow-scrolling: touch; }
+    .paperBody{ flex:1 1 auto; min-height:0; overflow:hidden; }
 
     .formPanel{ flex:1 1 auto; min-height:0; border-radius: 26px; display:flex; flex-direction:column; }
     .formBody{ padding: 14px; display:flex; flex-direction:column; gap: 12px; overflow:hidden; }
@@ -663,9 +663,9 @@
     .weekStack{ display:flex; flex-direction:column; gap:12px; }
 
     .rangeLayer{
-      display:flex;
-      flex-direction:column;
-      gap: 10px;
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 12px;
       align-items:stretch;
     }
     .rangeBar{
@@ -699,7 +699,7 @@
       flex: 0 0 auto;
     }
 
-    /* WEEK GRID: 7 nap (egymás alatt, egy oszlopban) */
+    /* WEEK GRID: 7 nap (egymás alatt, görgethető oszlopban) */
     .weekWide{
       display:flex;
       flex-direction:column;
@@ -711,7 +711,9 @@
     }
     .weekWide::-webkit-scrollbar{ width: 0; }
     .dayWide{
-      width:100%;
+      flex: 0 0 auto;
+      width: 100%;
+
       border-radius: 20px;
       border: 1px solid rgba(255,255,255,0.10);
       background: rgba(0,0,0,0.18);
@@ -723,7 +725,7 @@
       display:flex;
       flex-direction:column;
 
-      min-height: 140px;
+      min-height: 180px;
       height: auto;
       overflow: visible;
     }
@@ -1065,7 +1067,9 @@
       }
 
       .panel, .paperPanel, .overlayCard{ border-radius:22px; }
-      .panelBody, .paperBody, .timelineBody, .monthGrid{ overflow:hidden !important; }
+      .panelBody, .timelineBody, .monthGrid{ overflow:hidden !important; }
+      .paperBody{ overflow:auto !important; }
+      .weekWide{ overflow:auto !important; }
       .scrollPad{ padding-bottom:12px !important; }
 
       .paperBody{ padding:14px 14px 12px; }
@@ -1096,7 +1100,7 @@
     .paperWrap{ display:flex; flex-direction:column; gap:12px; }
     .paperGrid.single{ flex:1 1 auto; min-height:0; display:flex; }
     .paperGrid.single .paperPanel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-    .paperGrid.single .paperBody{ flex:1 1 auto; min-height:0; overflow:auto; -webkit-overflow-scrolling: touch; }
+    .paperGrid.single .paperBody{ flex:1 1 auto; min-height:0; overflow:auto; }
 
     .formWrap{ width:100%; height:100%; display:flex; flex-direction:column; gap:12px; }
     .formGrid.single{ flex:1 1 auto; min-height:0; display:flex; }
@@ -1971,6 +1975,7 @@
       segPersonal.classList.toggle("active", currentMode === "personal");
     }
 
+    
     function renderList(){
       listModeIcon.textContent = modeIcon(currentMode);
       listModeLabel.textContent = modeLabel(currentMode);
@@ -1993,7 +1998,6 @@
         return;
       }
 
-      // Mobil: a lista GÖRGETHETŐ (nem lapozós)
       paperList.innerHTML = "";
       tasks.forEach(task => {
         const item = document.createElement("div");
@@ -2032,6 +2036,132 @@
       });
 
       attachLongPressHandlers();
+    }
+
+
+    function toggleDone(taskId){
+      const today = todayYMD();
+      const tasks = loadListTasks();
+      const idx = tasks.findIndex(t => t.id === taskId);
+      if(idx < 0) return;
+      const t = tasks[idx];
+      t.done = !t.done;
+      t.doneAt = t.done ? today : null;
+      saveListTasks(tasks);
+      renderList();
+    }
+
+    function attachLongPressHandlers(){
+      const HOLD_MS = 550;
+      paperList.querySelectorAll(".paperItem").forEach(el => {
+        let timer = null;
+        const id = el.getAttribute("data-id");
+
+        const start = (e) => {
+          if(e?.target && e.target.closest && e.target.closest(".paperDel")) return;
+          el.classList.add("hold");
+          timer = setTimeout(() => {
+            el.classList.remove("hold");
+            toggleDone(id);
+          }, HOLD_MS);
+        };
+
+        const cancel = () => {
+          if(timer) clearTimeout(timer);
+          timer = null;
+          el.classList.remove("hold");
+        };
+
+        el.addEventListener("mousedown", start);
+        el.addEventListener("mouseup", cancel);
+        el.addEventListener("mouseleave", cancel);
+        el.addEventListener("mousemove", cancel);
+
+        el.addEventListener("touchstart", (e) => { start(e); }, { passive: true });
+        el.addEventListener("touchend", cancel, { passive: true });
+        el.addEventListener("touchcancel", cancel, { passive: true });
+      });
+    }
+
+    document.getElementById("btnClearAll").addEventListener("click", () => {
+      const ok = confirm("Biztos törlöd az összes feladatot ebben a módban?");
+      if(!ok) return;
+      const remaining = loadListTasks().filter(t => t.mode !== currentMode);
+      saveListTasks(remaining);
+      renderList();
+    });
+
+    function enterMode(mode){
+      currentMode = mode;
+      renderList();
+      show("list");
+    }
+
+    // -------------------------
+    // CALENDAR
+    // -------------------------
+    const weekWide = document.getElementById("weekWide");
+    const rangeLayer = document.getElementById("rangeLayer");
+    const calWeekLabel = document.getElementById("calWeekLabel");
+    const selDatePill = document.getElementById("selDatePill");
+    const calDayTasks = document.getElementById("calDayTasks");
+    const calSyncNote = document.getElementById("calSyncNote");
+
+    const cTitle = document.getElementById("cTitle");
+    const cTime = document.getElementById("cTime");
+    const cDate = document.getElementById("cDate");
+    const btnCalAddTask = document.getElementById("btnCalAddTask");
+    const btnCalClear = document.getElementById("btnCalClear");
+
+    let calWeekStart = mondayStart(new Date());
+    let selectedDate = todayYMD();
+
+    // Range mode inputs
+    let rangeOn = false;
+    const btnMultiToggle = document.getElementById("btnMultiToggle");
+    const multiPanel = document.getElementById("multiPanel");
+    const cFrom = document.getElementById("cFrom");
+    const cTo = document.getElementById("cTo");
+
+    // mode toggle
+    let calAddMode = "personal";
+    const togCalMode = document.getElementById("togCalMode");
+    const togCalModeV = document.getElementById("togCalModeV");
+    function renderCalToggle(){ togCalModeV.textContent = (calAddMode === "business" ? "💼 VÁLL" : "🌿 MAGÁN"); }
+    function cycleCalMode(){ calAddMode = (calAddMode === "business") ? "personal" : "business"; renderCalToggle(); }
+    togCalMode.addEventListener("click", cycleCalMode);
+    renderCalToggle();
+
+    function formatHU(date, opts){ return date.toLocaleDateString("hu-HU", opts); }
+    function mondayStart(d){
+      const x = new Date(d);
+      const day = x.getDay();
+      const diff = (day === 0 ? -6 : 1) - day;
+      x.setDate(x.getDate() + diff);
+      x.setHours(0,0,0,0);
+      return x;
+    }
+
+    // Toggle range UI
+    btnMultiToggle.addEventListener("click", () => {
+      rangeOn = !rangeOn;
+      multiPanel.style.display = rangeOn ? "block" : "none";
+      btnMultiToggle.textContent = rangeOn ? "✅ Több nap" : "📆 Több nap";
+      if(rangeOn){
+        cFrom.value = selectedDate;
+        cTo.value = selectedDate;
+      }
+      renderCalendarWeek();
+    });
+
+    function sortSingles(tasks){
+      return tasks.slice().sort((a,b) => {
+        const ta = (a.time && a.time.trim()) ? a.time : "99:99";
+        const tb = (b.time && b.time.trim()) ? b.time : "99:99";
+        if(ta < tb) return -1;
+        if(ta > tb) return 1;
+        return (a.createdAt||0) - (b.createdAt||0);
+      });
     }
 
     function renderSelectedDayTasks(){
@@ -2245,6 +2375,7 @@
     // Redefine a few renderers so lists are pageable (no scrolling).
     // =========================================================
 
+    
     function renderList(){
       listModeIcon.textContent = modeIcon(currentMode);
       listModeLabel.textContent = modeLabel(currentMode);
@@ -2306,6 +2437,7 @@
 
       attachLongPressHandlers();
     }
+
 
     function renderSelectedDayTasks(){
       const singles = sortSingles(getCalSinglesForDate(selectedDate));
