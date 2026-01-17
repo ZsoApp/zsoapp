@@ -2,8 +2,9 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>Zsolt adatbázisa</title>
+  <meta name="theme-color" content="#050608"/>
   <style>
     :root{
       --bg0:#050608;
@@ -18,7 +19,7 @@
       --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
     *{ box-sizing:border-box; }
-    html,body{ height:100%; }
+    html,body{ height:100%; background: var(--bg0); overscroll-behavior: none; }
     body{
       margin:0;
       font-family: var(--sans);
@@ -62,8 +63,8 @@
     }
 
     /* Mobile full-screen list/add layout */
-    .fullPage{ height:100%; width:100%; display:flex; flex-direction:column; padding: 12px; gap: 12px; }
-    .mobileTop{ padding: 12px 12px 10px; border-radius: 22px; }
+    .fullPage{ height:100%; width:100%; display:flex; flex-direction:column; padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); gap: 12px; }
+.mobileTop{ padding: 12px 12px 10px; border-radius: 22px; }
     .mobileActions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
     .mobileActions .btn{ padding:10px 12px; }
     .mobileActions .seg{ margin-right: auto; }
@@ -77,7 +78,7 @@
     .formBody{ padding: 14px; display:flex; flex-direction:column; gap: 12px; overflow:hidden; }
 
     @media (max-width: 520px){
-      .fullPage{ padding: 10px; gap: 10px; }
+      .fullPage{ padding: calc(10px + env(safe-area-inset-top)) 10px 10px; gap: 10px; }
       .mobileTop{ border-radius: 20px; }
       .mobileActions{ justify-content:space-between; }
       .mobileActions .seg{ order:3; width:100%; }
@@ -412,6 +413,8 @@
       transition: background 200ms var(--ease), color 200ms var(--ease);
       display:flex; align-items:center; gap:8px;
     }
+    .hidden{ display:none !important; }
+    .calSeg{ display:none; }
     .seg button:hover{ background: rgba(255,255,255,0.05); }
     .seg button.active{
       background: rgba(255,255,255,0.06);
@@ -644,7 +647,7 @@
     @media (max-width: 980px){ .formGrid{ grid-template-columns: 1fr; } }
 
     /* CALENDAR */
-    .calWrap{ width:100%; height:100%; display:flex; flex-direction:column; min-height:0; }
+    .calWrap{ width:100%; height:100%; display:flex; flex-direction:column; min-height:0; padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); gap: 12px; }
     .calGrid{ flex:1 1 auto; display:grid; grid-template-columns: 1fr 420px; gap:14px; padding:14px; min-height:0; }
     @media (max-width: 980px){ .calGrid{ grid-template-columns: 1fr; } }
 
@@ -986,6 +989,8 @@
        - no nested scroll areas
     ------------------------- */
     @media (max-width: 640px){
+      html,body{ background: var(--bg0); }
+
       body{ overflow:hidden; }
 
       .app{ padding:0; align-items:stretch; justify-content:stretch; }
@@ -997,7 +1002,7 @@
         border:0;
         background: rgba(0,0,0,0.20);
       }
-      .view{ padding:14px; }
+       .view{ padding: calc(14px + env(safe-area-inset-top)) 14px 14px; }
 
       .topbar{ padding:12px 12px; border-radius:0 !important; }
       .actions{ gap:8px; }
@@ -1026,7 +1031,11 @@
       .paperTitle{ font-size:14px; }
       .paperMeta{ font-size:10px; letter-spacing:.08em; }
 
-      .weekWide{ gap:10px; }
+      .weekWide{ gap:10px; grid-template-columns:1fr !important; }
+      .rangeLayer{ display:none !important; }
+      .calSeg{ display:flex; width:100%; }
+      #calPanelWeek, #calPanelForm{ display:none; }
+      #calPanelWeek.calShow, #calPanelForm.calShow{ display:flex; flex-direction:column; }
       .dayWide{ min-height:84px; padding:10px; border-radius:18px; }
       .dayWideTop .w{ font-size:11px; }
       .dayWideTop .d{ font-size:11px; }
@@ -1039,8 +1048,6 @@
       .taskBlocks{ left:88px; }
       .blockTask{ padding:8px; }
     }
-
-
     /* --- Mobile-first full-screen tweaks (v2) --- */
     .paperWrap, .formWrap, .calWrap{ width:100%; height:100%; max-width:none; }
     .paperWrap{ display:flex; flex-direction:column; gap:12px; }
@@ -1074,7 +1081,11 @@
       .paperPanel .panelHead .h{ font-size: 14px; }
     }
 
-  </style>
+  
+    /* Calendar tab visibility */
+    .calSeg{ display:none; }
+    #calPanelWeek, #calPanelForm{ display:flex; flex-direction:column; }
+    </style>
 </head>
 <body>
   <div class="noise"></div>
@@ -1110,7 +1121,7 @@
               </div>
             </div>
 
-            <div class="panel">
+            <div class="panel" id="dayPanelTasks">
               <div class="panelHead">
                 <div class="cap">feladatok</div>
                 <div class="h">Aznapi lista (idő szerint)</div>
@@ -1254,12 +1265,16 @@
               </div>
             </div>
             <div class="actions">
+              <div class="seg calSeg" id="calSeg">
+                <button id="segCalWeek" class="active"><span>🗓️</span><span>Hét</span></button>
+                <button id="segCalAdd"><span>＋</span><span>Feladat</span></button>
+              </div>
               <button class="btn" id="btnCalToList">Lista</button>
             </div>
           </div>
 
           <div class="calGrid">
-            <div class="panel">
+            <div class="panel" id="calPanelWeek">
               <div class="panelHead" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
                 <div>
                   <div class="cap">naptár</div>
@@ -1280,7 +1295,7 @@
               </div>
             </div>
 
-            <div class="panel">
+            <div class="panel" id="calPanelForm">
               <div class="panelHead">
                 <div class="cap">bevitel</div>
                 <div class="h">Naptár-feladat</div>
@@ -1422,6 +1437,7 @@
         const ld = store && store.meta && store.meta.lastDay;
         if(ld) localStorage.setItem(LS_DAY_KEY, String(ld));
       }catch{}
+
     }
 
 
@@ -1472,7 +1488,7 @@
     // -------------------------
     // Pagination (no scrolling)
     // -------------------------
-    const UI_PAGES = { list: 0, cal: 0, day: 0 };
+    const UI_PAGES = { list: 0, cal: 0, day: 0, week: 0 };
 
     function _isPhone(){
       return !!(window.matchMedia && window.matchMedia("(max-width: 640px)").matches);
@@ -1510,7 +1526,7 @@
     }
 
     window.addEventListener('resize', () => {
-      UI_PAGES.list = 0; UI_PAGES.cal = 0; UI_PAGES.day = 0;
+      UI_PAGES.list = 0; UI_PAGES.cal = 0; UI_PAGES.day = 0; UI_PAGES.week = 0; UI_PAGES.week = 0;
       if(views.list.classList.contains('active')) renderList();
       if(views.calendar.classList.contains('active')){
         renderCalendarWeek();
@@ -2199,15 +2215,41 @@
     }
     document.getElementById("btnTodayMonth").addEventListener("click", openMonthPicker);
 
+
+    // -------------------------
+    // Calendar tabs (phone)
+    // -------------------------
+    const calPanelWeek = document.getElementById('calPanelWeek');
+    const calPanelForm = document.getElementById('calPanelForm');
+    const segCalWeek = document.getElementById('segCalWeek');
+    const segCalAdd  = document.getElementById('segCalAdd');
+
+    function setCalTab(which){
+      if(!_isPhone()){
+        // Desktop: mindkettő látszik
+        if(calPanelWeek) calPanelWeek.classList.add('calShow');
+        if(calPanelForm) calPanelForm.classList.add('calShow');
+        return;
+      }
+      const showWeek = (which === 'week');
+      if(calPanelWeek) calPanelWeek.classList.toggle('calShow', showWeek);
+      if(calPanelForm) calPanelForm.classList.toggle('calShow', !showWeek);
+      if(segCalWeek) segCalWeek.classList.toggle('active', showWeek);
+      if(segCalAdd)  segCalAdd.classList.toggle('active', !showWeek);
+    }
+
+    if(segCalWeek) segCalWeek.addEventListener('click', ()=> setCalTab('week'));
+    if(segCalAdd)  segCalAdd.addEventListener('click', ()=> setCalTab('add'));
+
     // -------------------------
     // Navigation
     // -------------------------
     document.getElementById("btnListAdd").addEventListener("click", (e)=> diveToAdd(e.currentTarget));
-    document.getElementById("btnListCalendar").addEventListener("click", openCalendar);
+    document.getElementById("btnListCalendar").addEventListener("click", (e)=> openCalendar(e.currentTarget));
     document.getElementById("btnCalToList").addEventListener("click", ()=> { renderList(); show("list"); });
 
     document.getElementById("btnAddBack").addEventListener("click", ()=> { renderList(); show("list"); });
-    document.getElementById("btnToCalendarFromAdd").addEventListener("click", openCalendar);
+    document.getElementById("btnToCalendarFromAdd").addEventListener("click", (e)=> openCalendar(e.currentTarget));
 
     segBusiness.addEventListener("click", ()=> enterMode("business"));
     segPersonal.addEventListener("click", ()=> enterMode("personal"));
@@ -2364,6 +2406,293 @@
 
       _wirePager(calDayTasks, 'cal', totalPages, renderSelectedDayTasks);
     }
+
+
+
+    // --- RANGE BARS + WEEK GRID ---
+    function buildWeekDays(){
+      const days = [];
+      for(let i=0;i<7;i++){
+        const d = new Date(calWeekStart);
+        d.setDate(calWeekStart.getDate() + i);
+        days.push(ymdOf(d));
+      }
+      return days;
+    }
+
+    function assignLanes(segments){
+      const lanes = [];
+      const placed = [];
+      const sorted = segments.slice().sort((a,b)=> a.startCol - b.startCol || a.endCol - b.endCol);
+      for(const seg of sorted){
+        let laneIndex = -1;
+        for(let i=0;i<lanes.length;i++){
+          if(seg.startCol > lanes[i]) { laneIndex = i; break; }
+        }
+        if(laneIndex === -1){
+          laneIndex = lanes.length;
+          lanes.push(-1);
+        }
+        lanes[laneIndex] = Math.max(lanes[laneIndex], seg.endCol);
+        placed.push({ ...seg, lane: laneIndex });
+      }
+      return { placed, laneCount: lanes.length };
+    }
+
+    function renderRangeBarsForWeek(weekFrom, weekTo){
+      rangeLayer.innerHTML = "";
+      if(_isPhone()) { rangeLayer.style.display = "none"; return; }
+
+      const ranges = getCalRangesIntersecting(weekFrom, weekTo);
+      if(ranges.length === 0){
+        rangeLayer.style.display = "none";
+        return;
+      }
+      rangeLayer.style.display = "grid";
+
+      const days = buildWeekDays();
+      const idxOf = new Map(days.map((d,i)=>[d,i]));
+
+      const segments = [];
+      for(const ev of ranges){
+        const from = (ev.from < weekFrom) ? weekFrom : ev.from;
+        const to   = (ev.to > weekTo) ? weekTo : ev.to;
+        const startCol = idxOf.get(from);
+        const endCol = idxOf.get(to);
+        if(startCol == null || endCol == null) continue;
+        segments.push({ startCol, endCol, ev });
+      }
+
+      const { placed } = assignLanes(segments);
+      rangeLayer.style.gridAutoRows = "42px";
+
+      for(const seg of placed){
+        const bar = document.createElement("div");
+        bar.className = "rangeBar";
+        bar.style.gridColumn = (seg.startCol+1) + " / " + (seg.endCol+2);
+        bar.style.gridRow = (seg.lane+1) + " / " + (seg.lane+2);
+
+        const when = seg.ev.time && seg.ev.time.trim() ? seg.ev.time : "";
+        const meta = `${modeIcon(seg.ev.mode||"personal")} ${seg.ev.from}–${seg.ev.to}`;
+
+        bar.innerHTML = `
+          <div class="t">${escapeHtml(seg.ev.title)}</div>
+          <div class="m">${escapeHtml(meta)}${when ? (" • " + escapeHtml(when)) : ""}</div>
+        `;
+        rangeLayer.appendChild(bar);
+      }
+    }
+
+    function renderCalendarWeek(){
+      weekWide.innerHTML = "";
+      rangeLayer.innerHTML = "";
+
+      const weekDays = buildWeekDays();
+      const weekFrom = weekDays[0];
+      const weekTo = weekDays[6];
+
+      const weekLabelStart = parseYMD(weekFrom);
+      const weekLabelEnd = parseYMD(weekTo);
+      calWeekLabel.textContent = `${formatHU(weekLabelStart,{month:"long", day:"2-digit"})} — ${formatHU(weekLabelEnd,{month:"long", day:"2-digit"})}`;
+
+      renderRangeBarsForWeek(weekFrom, weekTo);
+
+      // Phone: 1 oszlop + lapozás (3 nap / oldal)
+      const daysPerPage = _isPhone() ? 3 : 7;
+      const totalPages = Math.max(1, Math.ceil(7 / daysPerPage));
+      UI_PAGES.week = _clamp(UI_PAGES.week, 0, totalPages - 1);
+      const start = UI_PAGES.week * daysPerPage;
+      const renderDays = _isPhone() ? weekDays.slice(start, start + daysPerPage) : weekDays;
+
+      for(const ymd of renderDays){
+        const isToday = ymd === todayYMD();
+        const isSel = ymd === selectedDate;
+
+        const day = document.createElement("div");
+        day.className = "dayWide" + (isToday ? " today" : "") + (isSel ? " sel" : "");
+        day.setAttribute("data-ymd", ymd);
+
+        const d = parseYMD(ymd);
+
+        const head = document.createElement("div");
+        head.className = "dayWideTop";
+        head.innerHTML = `
+          <div class="w">${formatHU(d,{weekday:"short"})}</div>
+          <div class="d">${formatHU(d,{month:"2-digit", day:"2-digit"})}</div>
+        `;
+        day.appendChild(head);
+
+        const taskWrap = document.createElement("div");
+        taskWrap.style.display = "flex";
+        taskWrap.style.flexDirection = "column";
+        taskWrap.style.gap = "8px";
+        day.appendChild(taskWrap);
+
+        const singlesAll = sortSingles(getCalSinglesForDate(ymd));
+        const total = singlesAll.length;
+
+        // Desktopon mutatjuk a feladatokat a kártyán, telefonon rejtve van CSS-ből
+        singlesAll.forEach(t => {
+          const block = document.createElement("div");
+          block.className = "calTask";
+          const when = (t.time && t.time.trim()) ? t.time : "—";
+          block.innerHTML = `
+            <div class="t">${escapeHtml(t.title)}</div>
+            <div class="m"><span>${escapeHtml(when)}</span><span>•</span><span>${escapeHtml(modeIcon(t.mode||"personal"))}</span></div>
+          `;
+          taskWrap.appendChild(block);
+        });
+
+        const pill = document.createElement("div");
+        pill.className = "miniPill";
+        pill.textContent = total ? `${total} db` : `üres`;
+        day.appendChild(pill);
+
+        day.addEventListener("click", () => {
+          selectedDate = ymd;
+          UI_PAGES.cal = 0;
+          renderCalendarWeek();
+          renderSelectedDayTasks();
+          if(_isPhone()) setCalTab('add');
+          setTimeout(()=> cTitle.focus(), 120);
+        });
+
+        // Telefonon hosszú nyomás → napi nézet
+        let lpTimer = null;
+        day.addEventListener("touchstart", () => { lpTimer = setTimeout(()=> openDayView(ymd), 480); }, { passive:true });
+        day.addEventListener("touchend", () => { if(lpTimer) clearTimeout(lpTimer); lpTimer=null; }, { passive:true });
+        day.addEventListener("touchcancel", () => { if(lpTimer) clearTimeout(lpTimer); lpTimer=null; }, { passive:true });
+
+        weekWide.appendChild(day);
+      }
+
+      // Pager a hét napjaihoz (telefonon)
+      if(_isPhone() && totalPages > 1){
+        weekWide.insertAdjacentHTML('beforeend', _pagerHTML(UI_PAGES.week, totalPages));
+        _wirePager(weekWide, 'week', totalPages, renderCalendarWeek);
+      }
+    }
+
+    function openCalendar(){
+      selectedDate = todayYMD();
+      calWeekStart = mondayStart(new Date());
+      rangeOn = false;
+      multiPanel.style.display = "none";
+      btnMultiToggle.textContent = "📆 Több nap";
+      cDate.value = selectedDate;
+      UI_PAGES.week = 0;
+      UI_PAGES.cal = 0;
+      renderCalendarWeek();
+      renderSelectedDayTasks();
+      show("calendar");
+      setCalTab(_isPhone() ? 'week' : 'week');
+      setTimeout(()=> cTitle.focus(), 150);
+    }
+
+
+
+    function clearCalForm(){
+      cTitle.value = "";
+      cTime.value = "";
+      cDate.value = selectedDate;
+      if(rangeOn){
+        cFrom.value = selectedDate;
+        cTo.value = selectedDate;
+      }
+      cTitle.focus();
+    }
+    btnCalClear.addEventListener("click", clearCalForm);
+
+    function addCalendarEvent(){
+      const title = (cTitle.value || "").trim();
+      if(!title){
+        cTitle.classList.add("danger");
+        setTimeout(()=> cTitle.classList.remove("danger"), 520);
+        cTitle.focus();
+        return;
+      }
+
+      const all = loadCalEvents();
+      const now = Date.now();
+
+      if(rangeOn){
+        const rr = clampRange((cFrom.value||"").trim(), (cTo.value||"").trim());
+        if(!rr.from){
+          cFrom.classList.add("danger");
+          setTimeout(()=> cFrom.classList.remove("danger"), 520);
+          cFrom.focus();
+          return;
+        }
+
+        all.push({
+          id: uid(),
+          type: "range",
+          title,
+          from: rr.from,
+          to: rr.to,
+          time: (cTime.value || "").trim(),
+          mode: calAddMode,
+          createdAt: now
+        });
+
+        selectedDate = rr.from;
+        calWeekStart = mondayStart(parseYMD(rr.from));
+      } else {
+        const date = (cDate.value || selectedDate || "").trim();
+        if(!date){
+          cDate.classList.add("danger");
+          setTimeout(()=> cDate.classList.remove("danger"), 520);
+          cDate.focus();
+          return;
+        }
+
+        all.push({
+          id: uid(),
+          type: "single",
+          title,
+          date,
+          time: (cTime.value || "").trim(),
+          mode: calAddMode,
+          createdAt: now
+        });
+        selectedDate = date;
+      }
+
+      saveCalEvents(all);
+
+      UI_PAGES.cal = 0;
+      renderCalendarWeek();
+      renderSelectedDayTasks();
+      syncCalendarTodayToList();
+
+      cTitle.value = "";
+      cTime.value = "";
+      cTitle.focus();
+    }
+
+    btnCalAddTask.addEventListener("click", addCalendarEvent);
+    cTitle.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addCalendarEvent(); } });
+    cTime.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addCalendarEvent(); } });
+
+    cDate.addEventListener("change", () => {
+      if(cDate.value){
+        selectedDate = cDate.value;
+        UI_PAGES.cal = 0;
+        renderCalendarWeek();
+        renderSelectedDayTasks();
+      }
+    });
+
+    document.getElementById("btnPrevWeek").addEventListener("click", () => {
+      calWeekStart.setDate(calWeekStart.getDate() - 7);
+      UI_PAGES.week = 0;
+      renderCalendarWeek();
+    });
+    document.getElementById("btnNextWeek").addEventListener("click", () => {
+      calWeekStart.setDate(calWeekStart.getDate() + 7);
+      UI_PAGES.week = 0;
+      renderCalendarWeek();
+    });
 
     function openDayView(dateYMD){
       ensureTimelineHours();
