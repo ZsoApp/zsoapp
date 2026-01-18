@@ -1177,7 +1177,7 @@
     .calSeg{ display:flex; }
     #calPanelWeek, #view-caladd{ display:flex; flex-direction:column; }
     
-    /* === Calendar add: centered icon pickers (date/time) === */
+/* === Calendar add-task: centered icon pickers (date/time) === */
 .calPickCenter{
   display:flex;
   justify-content:center;
@@ -1187,6 +1187,7 @@
   flex-wrap:wrap;
 }
 .calIconBtn{
+  position:relative;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -1201,38 +1202,25 @@
   cursor:pointer;
   user-select:none;
 }
-.calIconBtn:active{ transform: translateY(0.5px); }
-.calIconBtn:hover{ border-color: rgba(255,255,255,0.16); }
-.calIconBtn:focus{ outline:none; border-color: rgba(255,255,255,0.22); box-shadow: 0 0 0 3px rgba(255,255,255,0.06); }
-.calIconGlyph{
-  width:42px;
-  height:42px;
-  border-radius:16px;
-  border:1px solid rgba(255,255,255,0.10);
-  background:rgba(255,255,255,0.06);
-  display:grid;
-  place-items:center;
-  font-size:18px;
-  color:rgba(255,255,255,0.92);
-}
+.calIconGlyph{ font-size:20px; line-height:1; }
 .calIconValue{
-  font-family:var(--mono);
-  font-size:14px;
-  color:rgba(255,255,255,0.88);
-  letter-spacing:0.2px;
-  text-align:center;
-  white-space:nowrap;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 13px;
+  color: rgba(255,255,255,0.88);
 }
-.calHiddenInput{
+.calOverlayInput{
   position:absolute;
-  left:-9999px;
-  width:1px;
-  height:1px;
-  opacity:0;
+  inset:0;
+  width:100%;
+  height:100%;
+  opacity:0.001; /* keep it clickable */
+  cursor:pointer;
+  border:0;
+  background:transparent;
 }
-/* === End calendar add pickers === */
+/* === End calendar add-task pickers === */
 
-  </style>
+</style>
 </head>
 <body>
   <div class="noise"></div>
@@ -1443,17 +1431,44 @@
                   <input id="cTitle" placeholder="Pl.: Találkozó / Bevásárlás / Munka blokk" />
                 </div>
 
+                
                 <div class="calPickCenter" aria-label="Dátum és idő">
-                  <button class="calIconBtn" id="cTimeBtn" type="button" aria-label="Idő kiválasztása">
+                  <label class="calIconBtn calIconLabel" aria-label="Idő kiválasztása">
                     <span class="calIconGlyph" aria-hidden="true">⏰</span>
                     <span class="calIconValue" id="cTimeVal">--:--</span>
-                  </button>
-                  <button class="calIconBtn" id="cDateBtn" type="button" aria-label="Dátum kiválasztása">
+                    <input id="cTime" type="time" step="3600" class="calOverlayInput" />
+                  </label>
+
+                  <label class="calIconBtn calIconLabel" aria-label="Dátum kiválasztása">
                     <span class="calIconGlyph" aria-hidden="true">📅</span>
                     <span class="calIconValue" id="cDateVal">—</span>
+                    <input id="cDate" type="date" class="calOverlayInput" />
+                  </label>
+                </div>
+
+
+                <div class="togRow">
+                  <button class="tog" id="togCalMode" type="button" title="Kattintásra vált">
+                    <span class="k">lista</span><span class="v" id="togCalModeV">🌿 MAGÁN</span>
                   </button>
-                  <input class="calHiddenInput" id="cTime" type="time" step="3600" />
-                  <input class="calHiddenInput" id="cDate" type="date" />
+
+                  <button class="togMini" id="btnMultiToggle" type="button" title="Időszak felvétele">
+                    📆 Több nap
+                  </button>
+
+                  <div id="multiPanel" style="display:none; width:100%;">
+                    <div class="row2" style="margin-top:10px;">
+                      <div class="field">
+                        <label for="cFrom">-tól (dátum)</label>
+                        <input id="cFrom" type="date" />
+                      </div>
+                      <div class="field">
+                        <label for="cTo">-ig (dátum)</label>
+                        <input id="cTo" type="date" />
+                      </div>
+                    </div>
+                    <div class="smallNote">Több napos esemény → a naptárban felül folyamatos sáv lesz.</div>
+                  </div>
                 </div>
 
                 <div class="row2" style="align-items:end; margin-top:12px;">
@@ -1956,19 +1971,12 @@
     }
 
     function openCalAddPage(autofocus=true){
-      prepareCalAddDefaults();
       show("caladd");
       // alapérték: a jelenleg kijelölt nap (ha nincs, akkor az utolsó)
       const base = (selectedDate && selectedDate.trim()) ? selectedDate : (getLastSelectedDay() || todayYMD());
       selectedDate = base;
       setLastSelectedDay(base);
       try{ cDate.value = base; }catch{}
-      // idő: mindig kerek óra (görgethető pickerrel)
-      try{
-        if(!cTime.value) cTime.value = nowWholeHour();
-        cTime.value = clampToWholeHour(cTime.value);
-      }catch{}
-      try{ updateCalPickLabels(); }catch{}
       try{ selDatePill.textContent = "dátum: " + prettyCalDate(base); }catch{}
       try{ UI_PAGES.cal = 0; }catch{}
       try{ renderSelectedDayTasks(); }catch{}
@@ -2205,79 +2213,6 @@
     const cTitle = document.getElementById("cTitle");
     const cTime = document.getElementById("cTime");
     const cDate = document.getElementById("cDate");
-    const cTimeVal = document.getElementById("cTimeVal");
-    const cDateVal = document.getElementById("cDateVal");
-    const cTimeBtn = document.getElementById("cTimeBtn");
-    const cDateBtn = document.getElementById("cDateBtn");
-
-    function clampToWholeHour(t){
-      // t: "HH:MM" (or empty)
-      if(!t || typeof t !== "string") return "";
-      const parts = t.split(":");
-      if(parts.length < 1) return "";
-      const hh = (parts[0] || "").padStart(2, "0");
-      return hh + ":00";
-    }
-    function nowWholeHour(){
-      const d = new Date();
-      const hh = String(d.getHours()).padStart(2, "0");
-      return hh + ":00";
-    }
-    function updateCalPickLabels(){
-      if(cTimeVal) cTimeVal.textContent = (cTime && cTime.value) ? cTime.value : "--:--";
-      if(cDateVal){
-        if(cDate && cDate.value){
-          // compact but nice: YYYY. MMM. DD.
-          try{
-            const d = parseYMD(cDate.value);
-            cDateVal.textContent = formatHU(d, { year:"numeric", month:"long", day:"2-digit" });
-          }catch{ cDateVal.textContent = cDate.value; }
-        } else cDateVal.textContent = "—";
-      }
-    }
-
-
-
-    function prepareCalAddDefaults(){
-      // Ensure date + time defaults are valid and pretty on entry
-      if(cTime){
-        if(!cTime.value) cTime.value = nowWholeHour();
-        const snapped = clampToWholeHour(cTime.value);
-        if(snapped) cTime.value = snapped;
-      }
-      updateCalPickLabels();
-    }
-    // Make the icon pickers open the native pickers (where supported)
-    function openNativePicker(input){
-      if(!input) return;
-      try{ input.showPicker(); return; }catch{}
-      try{ input.focus({preventScroll:true}); }catch{ try{ input.focus(); }catch{} }
-      try{ input.click(); }catch{}
-    }
-    if(cTimeBtn){
-      cTimeBtn.addEventListener("click", (e)=>{ e.preventDefault(); openNativePicker(cTime); });
-    }
-    if(cDateBtn){
-      cDateBtn.addEventListener("click", (e)=>{ e.preventDefault(); openNativePicker(cDate); });
-    }
-
-    // Enforce whole-hour time selection
-    if(cTime){
-      cTime.addEventListener("input", ()=>{
-        const snapped = clampToWholeHour(cTime.value);
-        if(snapped && cTime.value !== snapped) cTime.value = snapped;
-        updateCalPickLabels();
-      });
-      cTime.addEventListener("change", ()=>{
-        const snapped = clampToWholeHour(cTime.value);
-        if(snapped && cTime.value !== snapped) cTime.value = snapped;
-        updateCalPickLabels();
-      });
-    }
-    if(cDate){
-      cDate.addEventListener("change", updateCalPickLabels);
-      cDate.addEventListener("input", updateCalPickLabels);
-    }
     const btnCalAddTask = document.getElementById("btnCalAddTask");
     const btnCalClear = document.getElementById("btnCalClear");
 
@@ -3061,6 +2996,79 @@
       // Ensure the layout matches hourHeight on phone: rebuild once more
       if(_isPhone()) ensureTimelineHours();
     }
+
+
+/* === Calendar add-task: date/time icon pickers logic === */
+(function(){
+  const cTime = document.getElementById("cTime");
+  const cDate = document.getElementById("cDate");
+  const cTimeVal = document.getElementById("cTimeVal");
+  const cDateVal = document.getElementById("cDateVal");
+
+  function clampToWholeHour(t){
+    if(!t || typeof t !== "string") return "";
+    const hh = (t.split(":")[0] || "").padStart(2,"0");
+    return hh + ":00";
+  }
+  function nowWholeHour(){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,"0");
+    return hh + ":00";
+  }
+  function parseYMD(s){
+    // "YYYY-MM-DD"
+    const [y,m,d] = (s||"").split("-").map(Number);
+    if(!y || !m || !d) return null;
+    return new Date(y, m-1, d);
+  }
+  function formatHUDate(d){
+    try{
+      return new Intl.DateTimeFormat("hu-HU", { year:"numeric", month:"long", day:"2-digit", weekday:"long" }).format(d);
+    }catch{
+      return d.toISOString().slice(0,10);
+    }
+  }
+  function syncLabels(){
+    if(cTimeVal) cTimeVal.textContent = (cTime && cTime.value) ? cTime.value : "--:--";
+    if(cDateVal){
+      if(cDate && cDate.value){
+        const d = parseYMD(cDate.value);
+        cDateVal.textContent = d ? formatHUDate(d) : cDate.value;
+      }else{
+        cDateVal.textContent = "—";
+      }
+    }
+  }
+
+  if(cTime){
+    // Default to whole hour if empty
+    if(!cTime.value) cTime.value = nowWholeHour();
+    cTime.value = clampToWholeHour(cTime.value);
+
+    // Enforce whole hour on any change
+    cTime.addEventListener("input", ()=>{
+      const clamped = clampToWholeHour(cTime.value);
+      if(clamped && clamped !== cTime.value) cTime.value = clamped;
+      syncLabels();
+    });
+
+    // Also enforce on focus/click (some browsers keep minutes)
+    cTime.addEventListener("focus", ()=>{
+      const clamped = clampToWholeHour(cTime.value || nowWholeHour());
+      if(clamped) cTime.value = clamped;
+      syncLabels();
+    });
+  }
+
+  if(cDate){
+    cDate.addEventListener("input", syncLabels);
+    cDate.addEventListener("change", syncLabels);
+  }
+
+  // Initial paint
+  syncLabels();
+})();
+ /* === End calendar add-task pickers logic === */
 
 </script>
 </body>
