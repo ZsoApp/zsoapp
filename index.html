@@ -1221,7 +1221,22 @@
 /* === End calendar add-task pickers === */
 
 
-/* === PATCH: add-task date/time icons (final) === */
+/* === PATCH: soften date/time icons on add-task screen === */
+.addTaskIcon{
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  color: rgba(255,255,255,0.65) !important;
+  backdrop-filter: blur(6px);
+}
+.addTaskIcon:hover,
+.addTaskIcon:active{
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+/* === END PATCH === */
+
+
+/* === PATCH: make add-task date/time icons darker === */
 .addTaskIcon{
   background: rgba(0,0,0,0.28) !important;
   border: 1px solid rgba(255,255,255,0.06) !important;
@@ -1334,8 +1349,8 @@
 
             <div class="actions mobileActions">
               <div class="seg" title="Gyors váltás">
-                <button id="segBusiness" aria-label="Vállalkozás mód" title="Vállalkozás mód"><span>💼</span><span>Váll.</span></button>
-                <button id="segPersonal" aria-label="Magánélet mód" title="Magánélet mód"><span>🌿</span><span>Magán</span></button>
+                <button id="segBusiness"><span>💼</span><span>Váll.</span></button>
+                <button id="segPersonal"><span>🌿</span><span>Magán</span></button>
               </div>
 
               <button class="btn" id="btnListAdd">＋ Feladat</button>
@@ -2122,7 +2137,9 @@
       segBusiness.classList.toggle("active", currentMode === "business");
       segPersonal.classList.toggle("active", currentMode === "personal");
     }
-    function renderListBase(){
+
+    
+    function renderList(){
       listModeIcon.textContent = modeIcon(currentMode);
       listModeLabel.textContent = modeLabel(currentMode);
       setSegActive();
@@ -2166,7 +2183,7 @@
               ${ma}${doneChip}${srcChip}
             </div>
           </div>
-          <button class=\"paperDel\" data-del=\"${task.id}\" aria-label=\"Törlés\" title=\"Törlés\">Törlés</button>
+          <button class="paperDel" data-del="${task.id}">Törlés</button>
         `;
         paperList.appendChild(item);
       });
@@ -2183,12 +2200,6 @@
 
       attachLongPressHandlers();
     }
-
-    // Wrapper kept for compatibility
-    function renderList(){
-      return renderListBase();
-    }
-
 
 
     function toggleDone(taskId){
@@ -2531,7 +2542,69 @@
     // MOBILE_OVERRIDES_NO_SCROLL
     // Redefine a few renderers so lists are pageable (no scrolling).
     // =========================================================
-    // (Telefonon is ugyanazt a list renderelőt használjuk; a külön re-definiálás megszűnt.)
+
+    
+    function renderList(){
+      listModeIcon.textContent = modeIcon(currentMode);
+      listModeLabel.textContent = modeLabel(currentMode);
+      setSegActive();
+
+      const all = getTasksForMode(currentMode);
+      const tasks = sortListTasks(all);
+
+      const doneCount = tasks.filter(t => t.done).length;
+      const syncedCount = tasks.filter(t => t.source === "calendar").length;
+      countNote.innerHTML = `<b>${tasks.length}</b> feladat • kész: <b>${doneCount}</b> • naptárból: <b>${syncedCount}</b>`;
+
+      if(tasks.length === 0){
+        paperList.innerHTML = `
+          <div class="smallNote">
+            Még nincs feladat ebben a módban.<br/>
+            Nyomd meg a <b>＋ Feladat</b> gombot.
+          </div>
+        `;
+        return;
+      }
+
+      paperList.innerHTML = "";
+      tasks.forEach(task => {
+        const item = document.createElement("div");
+        item.className = "paperItem" + (task.done ? " done" : "");
+        item.setAttribute("data-id", task.id);
+
+        const due = fmtDue(task);
+        const ma = isTodayDate(task.date) ? `<span class="chip">MA</span>` : ``;
+        const doneChip = task.done ? `<span class="chip">KÉSZ</span>` : ``;
+        const srcChip = task.source === "calendar" ? `<span class="chip">📅</span>` : ``;
+
+        item.innerHTML = `
+          <div class="dot"></div>
+          <div class="paperText">
+            <div class="paperTitle">${escapeHtml(task.title)}</div>
+            <div class="paperMeta">
+              <span>[${escapeHtml(task.priority)}]</span>
+              <span>•</span>
+              <span>határidő: ${escapeHtml(due)}</span>
+              ${ma}${doneChip}${srcChip}
+            </div>
+          </div>
+          <button class="paperDel" data-del="${task.id}">Törlés</button>
+        `;
+        paperList.appendChild(item);
+      });
+
+      paperList.querySelectorAll("[data-del]").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute("data-del");
+          const remaining = loadListTasks().filter(t => t.id !== id);
+          saveListTasks(remaining);
+          renderList();
+        });
+      });
+
+      attachLongPressHandlers();
+    }
 
 
     function renderSelectedDayTasks(){
