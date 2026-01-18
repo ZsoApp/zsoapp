@@ -1220,6 +1220,21 @@
 }
 /* === End calendar add-task pickers === */
 
+
+/* === PATCH: soften date/time icons on add-task screen === */
+.addTaskIcon{
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  color: rgba(255,255,255,0.65) !important;
+  backdrop-filter: blur(6px);
+}
+.addTaskIcon:hover,
+.addTaskIcon:active{
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+/* === END PATCH === */
+
 </style>
 </head>
 <body>
