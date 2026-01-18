@@ -2810,6 +2810,12 @@
       cTitle.value = "";
       cTime.value = "";
       cTitle.focus();
+
+      // FIX: Mentés után ugorjon vissza a Naptár oldalra
+      hideKeyboard();
+      show("calendar");
+      setCalTab(_isPhone() ? "week" : "week");
+
     }
 
     btnCalAddTask.addEventListener("click", addCalendarEvent);
