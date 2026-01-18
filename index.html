@@ -1978,6 +1978,9 @@
       selectedDate = base;
       setLastSelectedDay(base);
       try{ cDate.value = base; }catch{}
+      // always start with NO time selected for new calendar task
+      try{ cTime.value = ""; }catch{}
+      try{ const _tv = document.getElementById("cTimeVal"); if(_tv) _tv.textContent = ""; }catch{}
       try{ selDatePill.textContent = "dátum: " + prettyCalDate(base); }catch{}
       try{ UI_PAGES.cal = 0; }catch{}
       try{ renderSelectedDayTasks(); }catch{}
@@ -2797,6 +2800,7 @@
     function clearCalForm(){
       cTitle.value = "";
       cTime.value = "";
+      try{ const _tv = document.getElementById("cTimeVal"); if(_tv) _tv.textContent = ""; }catch{}
       cDate.value = selectedDate;
       if(rangeOn){
         cFrom.value = selectedDate;
@@ -2870,6 +2874,7 @@
 
       cTitle.value = "";
       cTime.value = "";
+      try{ const _tv = document.getElementById("cTimeVal"); if(_tv) _tv.textContent = ""; }catch{}
       cTitle.focus();
 
       // FIX: Mentés után ugorjon vissza a Naptár oldalra
