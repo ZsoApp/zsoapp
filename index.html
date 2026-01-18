@@ -593,6 +593,21 @@
       border-color: rgba(255,255,255,0.12);
     }
     .paperItem.done{ opacity:0.62; }
+
+    .paperItem.justAdded{
+      animation: popIn 160ms ease-out;
+    }
+    @keyframes popIn{
+      from{ transform: translateY(6px); opacity: 0.0; }
+      to{ transform: translateY(0); opacity: 1.0; }
+    }
+    .paperItem.doneFlash{
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.18) inset;
+    }
+
+    .calIconLabel.hasValue{
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.18) inset;
+    }
     .paperItem.done::after{
       content:"";
       position:absolute;
@@ -1463,7 +1478,7 @@
           <div class="formPanel panel" style="flex:1 1 auto; min-height:0; overflow:hidden;">
             <div class="panelHead">
                 <div class="cap">bevitel</div>
-            <div class="panelBody" style="padding:14px; flex:1 1 auto; min-height:0; overflow:hidden;">
+            <div class="panelBody" style="padding:14px; flex:1 1 auto; min-height:0; overflow:auto; -webkit-overflow-scrolling:touch;">
               
                 <div class="pillRow">
                   <div class="pill">naptár adatbázis • localStorage</div>
@@ -2086,6 +2101,7 @@
       const tasks = loadListTasks();
       tasks.push(task);
       saveListTasks(tasks);
+      window.__lastAddedTaskId = task.id;
 
       currentMode = task.mode;
       hideKeyboard();
@@ -2159,7 +2175,7 @@
       paperList.innerHTML = "";
       tasks.forEach(task => {
         const item = document.createElement("div");
-        item.className = "paperItem" + (task.done ? " done" : "");
+        item.className = "paperItem" + (task.done ? " done" : "") + (window.__lastAddedTaskId === task.id ? " justAdded" : "");
         item.setAttribute("data-id", task.id);
 
         const due = fmtDue(task);
@@ -2198,7 +2214,19 @@
 
     // Wrapper kept for compatibility
     function renderList(){
-      return renderListBase();
+      const r = renderListBase();
+      // remove "just added" highlight after a short moment (no re-render)
+      if(window.__lastAddedTaskId){
+        const _id = window.__lastAddedTaskId;
+        setTimeout(()=>{
+          try{
+            const el = paperList.querySelector(`.paperItem[data-id="${_id}"]`);
+            if(el) el.classList.remove("justAdded");
+          }catch{}
+          window.__lastAddedTaskId = null;
+        }, 220);
+      }
+      return r;
     }
 
 
@@ -2226,6 +2254,10 @@
           el.classList.add("hold");
           timer = setTimeout(() => {
             el.classList.remove("hold");
+            // subtle haptic + flash (best-effort)
+            try{ if(navigator.vibrate) navigator.vibrate(15); }catch{}
+            el.classList.add("doneFlash");
+            setTimeout(()=>{ try{ el.classList.remove("doneFlash"); }catch{} }, 180);
             toggleDone(id);
           }, HOLD_MS);
         };
@@ -3050,6 +3082,8 @@
         cDateVal.textContent = "—";
       }
     }
+    try{ const lbl = cDateVal && cDateVal.closest ? cDateVal.closest("label") : null; if(lbl) lbl.classList.toggle("hasValue", !!(cDate && cDate.value)); }catch{}
+    try{ const lblT = cTimeVal && cTimeVal.closest ? cTimeVal.closest("label") : null; if(lblT) lblT.classList.toggle("hasValue", !!(cTime && cTime.value)); }catch{}
   }
 
   if(cTime){
@@ -3113,6 +3147,8 @@
         tDateVal.textContent = "—";
       }
     }
+    try{ const lbl = tDateVal && tDateVal.closest ? tDateVal.closest("label") : null; if(lbl) lbl.classList.toggle("hasValue", !!(tDate && tDate.value)); }catch{}
+    try{ const lblT = tTimeVal && tTimeVal.closest ? tTimeVal.closest("label") : null; if(lblT) lblT.classList.toggle("hasValue", !!(tTime && tTime.value)); }catch{}
   }
 
   if(tTime){
