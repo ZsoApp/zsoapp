@@ -1249,6 +1249,12 @@
 }
 /* === END PATCH === */
 
+
+/* === PATCH: modern SVG icons for calendar add-task pickers === */
+.calIconGlyph{ display:inline-flex; align-items:center; justify-content:center; }
+.calSvg{ width:20px; height:20px; display:block; }
+/* === END PATCH === */
+
 </style>
 </head>
 <body>
@@ -1463,13 +1469,19 @@
                 
                 <div class="calPickCenter" aria-label="Dátum és idő">
                   <label class="calIconBtn calIconLabel" aria-label="Idő kiválasztása">
-                    <span class="calIconGlyph" aria-hidden="true">⏰</span>
+                    <span class="calIconGlyph" aria-hidden="true"><svg class="calSvg" viewBox="0 0 24 24" aria-hidden="true">
+  <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <path d="M12 7.5v5l3.2 1.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
                     <span class="calIconValue" id="cTimeVal"></span>
                     <input id="cTime" type="time" step="3600" class="calOverlayInput" />
                   </label>
 
                   <label class="calIconBtn calIconLabel" aria-label="Dátum kiválasztása">
-                    <span class="calIconGlyph" aria-hidden="true">📅</span>
+                    <span class="calIconGlyph" aria-hidden="true"><svg class="calSvg" viewBox="0 0 24 24" aria-hidden="true">
+  <rect x="4.5" y="6.5" width="15" height="13" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <path d="M8 4.8v3.2M16 4.8v3.2M4.5 9.2h15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+</svg></span>
                     <span class="calIconValue" id="cDateVal">—</span>
                     <input id="cDate" type="date" class="calOverlayInput" />
                   </label>
@@ -2007,7 +2019,8 @@
       selectedDate = base;
       setLastSelectedDay(base);
       try{ cDate.value = base; }catch{}
-      // always start with NO time selected for new calendar task
+            try{ cDate.dispatchEvent(new Event("input", {bubbles:true})); }catch{}
+// always start with NO time selected for new calendar task
       try{ cTime.value = ""; }catch{}
       try{ const _tv = document.getElementById("cTimeVal"); if(_tv) _tv.textContent = ""; }catch{}
       try{ selDatePill.textContent = "dátum: " + prettyCalDate(base); }catch{}
@@ -2794,7 +2807,7 @@
           UI_PAGES.cal = 0;
           renderCalendarWeek();
           renderSelectedDayTasks();
-          if(_isPhone()) setCalTab('add');
+          if(_isPhone()) openCalAddPage(false);
           setTimeout(()=> cTitle.focus(), 120);
         });
 
