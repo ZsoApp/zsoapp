@@ -2013,7 +2013,8 @@
 
     function openCalAddPage(autofocus=true){
       show("caladd");
-      // alapérték: az utoljára kijelölt nap (megbízhatóbb), különben a jelenlegi, különben ma
+            try{ setTimeout(()=>{ cTitle.focus(); cTitle.setSelectionRange(cTitle.value.length, cTitle.value.length); }, 50); }catch{}
+// alapérték: az utoljára kijelölt nap (megbízhatóbb), különben a jelenlegi, különben ma
       const last = (getLastSelectedDay && getLastSelectedDay()) ? getLastSelectedDay() : "";
       const base = (last && last.trim()) ? last : ((selectedDate && selectedDate.trim()) ? selectedDate : todayYMD());
       selectedDate = base;
@@ -2273,7 +2274,7 @@
     const cTo = document.getElementById("cTo");
 
     // mode toggle
-    let calAddMode = "personal";
+    let calAddMode = "business";
     const togCalMode = document.getElementById("togCalMode");
     const togCalModeV = document.getElementById("togCalModeV");
     function renderCalToggle(){ togCalModeV.textContent = (calAddMode === "business" ? "💼 VÁLL" : "🌿 MAGÁN"); }
