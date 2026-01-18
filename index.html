@@ -1147,7 +1147,16 @@
       .taskBlocks{ left:88px; }
       .blockTask{ padding:8px; }
     }
-    /* --- Mobile-first full-screen tweaks (v2) --- */
+    /* --- Calendar add page: allow scroll on mobile (fix) --- */
+@media (max-width: 640px){
+  #view-caladd .panelBody{
+    overflow:auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
+/* --- Mobile-first full-screen tweaks (v2) --- */
     .paperWrap, .formWrap, .calWrap{ width:100%; height:100%; max-width:none; }
     .paperWrap{ display:flex; flex-direction:column; gap:12px; }
     .paperGrid.single{ flex:1 1 auto; min-height:0; display:flex; }
