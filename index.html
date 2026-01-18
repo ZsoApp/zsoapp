@@ -1177,51 +1177,60 @@
     .calSeg{ display:flex; }
     #calPanelWeek, #view-caladd{ display:flex; flex-direction:column; }
     
-    /* === Calendar add: icon-style date/time pickers (requested) === */
-    .calPickRow{ align-items:stretch; }
-    .iconPick{
-      position:relative;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:12px 12px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,0.10);
-      background:rgba(0,0,0,0.18);
-      box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
-      min-height:48px;
-    }
-    .iconPick .iconBtn{
-      width:36px;
-      height:36px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,0.10);
-      background:rgba(255,255,255,0.06);
-      color:rgba(255,255,255,0.92);
-      cursor:pointer;
-      display:grid;
-      place-items:center;
-      font-size:16px;
-    }
-    .iconPick .iconVal{
-      font-family:var(--mono);
-      font-size:14px;
-      color:rgba(255,255,255,0.88);
-      letter-spacing:0.2px;
-      white-space:nowrap;
-    }
-    .iconPick input{
-      position:absolute;
-      inset:0;
-      opacity:0;
-      pointer-events:none;
-    }
-    .iconPick:focus-within{
-      outline: none;
-      border-color: rgba(255,255,255,0.22);
-      box-shadow: 0 0 0 3px rgba(255,255,255,0.06);
-    }
-    /* === End calendar add picker styles === */
+    /* === Calendar add: centered icon pickers (date/time) === */
+.calPickCenter{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:14px;
+  margin: 10px 0 6px;
+  flex-wrap:wrap;
+}
+.calIconBtn{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:12px 14px;
+  min-width:132px;
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,0.10);
+  background:rgba(0,0,0,0.18);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
+  cursor:pointer;
+  user-select:none;
+}
+.calIconBtn:active{ transform: translateY(0.5px); }
+.calIconBtn:hover{ border-color: rgba(255,255,255,0.16); }
+.calIconBtn:focus{ outline:none; border-color: rgba(255,255,255,0.22); box-shadow: 0 0 0 3px rgba(255,255,255,0.06); }
+.calIconGlyph{
+  width:42px;
+  height:42px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,0.10);
+  background:rgba(255,255,255,0.06);
+  display:grid;
+  place-items:center;
+  font-size:18px;
+  color:rgba(255,255,255,0.92);
+}
+.calIconValue{
+  font-family:var(--mono);
+  font-size:14px;
+  color:rgba(255,255,255,0.88);
+  letter-spacing:0.2px;
+  text-align:center;
+  white-space:nowrap;
+}
+.calHiddenInput{
+  position:absolute;
+  left:-9999px;
+  width:1px;
+  height:1px;
+  opacity:0;
+}
+/* === End calendar add pickers === */
 
   </style>
 </head>
@@ -1434,41 +1443,17 @@
                   <input id="cTitle" placeholder="Pl.: Találkozó / Bevásárlás / Munka blokk" />
                 </div>
 
-                <div class="row2 calPickRow">
-                  <div class="iconPick" id="cTimePick" title="Idő">
-                    <button class="iconBtn" type="button" aria-label="Idő">⏰</button>
-                    <div class="iconVal" id="cTimeVal">--:--</div>
-                    <input id="cTime" type="time" step="3600" />
-                  </div>
-                  <div class="iconPick" id="cDatePick" title="Dátum">
-                    <button class="iconBtn" type="button" aria-label="Dátum">📅</button>
-                    <div class="iconVal" id="cDateVal">—</div>
-                    <input id="cDate" type="date" />
-                  </div>
-                </div>
-
-                <div class="togRow">
-                  <button class="tog" id="togCalMode" type="button" title="Kattintásra vált">
-                    <span class="k">lista</span><span class="v" id="togCalModeV">🌿 MAGÁN</span>
+                <div class="calPickCenter" aria-label="Dátum és idő">
+                  <button class="calIconBtn" id="cTimeBtn" type="button" aria-label="Idő kiválasztása">
+                    <span class="calIconGlyph" aria-hidden="true">⏰</span>
+                    <span class="calIconValue" id="cTimeVal">--:--</span>
                   </button>
-
-                  <button class="togMini" id="btnMultiToggle" type="button" title="Időszak felvétele">
-                    📆 Több nap
+                  <button class="calIconBtn" id="cDateBtn" type="button" aria-label="Dátum kiválasztása">
+                    <span class="calIconGlyph" aria-hidden="true">📅</span>
+                    <span class="calIconValue" id="cDateVal">—</span>
                   </button>
-
-                  <div id="multiPanel" style="display:none; width:100%;">
-                    <div class="row2" style="margin-top:10px;">
-                      <div class="field">
-                        <label for="cFrom">-tól (dátum)</label>
-                        <input id="cFrom" type="date" />
-                      </div>
-                      <div class="field">
-                        <label for="cTo">-ig (dátum)</label>
-                        <input id="cTo" type="date" />
-                      </div>
-                    </div>
-                    <div class="smallNote">Több napos esemény → a naptárban felül folyamatos sáv lesz.</div>
-                  </div>
+                  <input class="calHiddenInput" id="cTime" type="time" step="3600" />
+                  <input class="calHiddenInput" id="cDate" type="date" />
                 </div>
 
                 <div class="row2" style="align-items:end; margin-top:12px;">
@@ -1971,6 +1956,7 @@
     }
 
     function openCalAddPage(autofocus=true){
+      prepareCalAddDefaults();
       show("caladd");
       // alapérték: a jelenleg kijelölt nap (ha nincs, akkor az utolsó)
       const base = (selectedDate && selectedDate.trim()) ? selectedDate : (getLastSelectedDay() || todayYMD());
@@ -2221,8 +2207,8 @@
     const cDate = document.getElementById("cDate");
     const cTimeVal = document.getElementById("cTimeVal");
     const cDateVal = document.getElementById("cDateVal");
-    const cTimePick = document.getElementById("cTimePick");
-    const cDatePick = document.getElementById("cDatePick");
+    const cTimeBtn = document.getElementById("cTimeBtn");
+    const cDateBtn = document.getElementById("cDateBtn");
 
     function clampToWholeHour(t){
       // t: "HH:MM" (or empty)
@@ -2244,12 +2230,23 @@
           // compact but nice: YYYY. MMM. DD.
           try{
             const d = parseYMD(cDate.value);
-            cDateVal.textContent = formatHU(d, { year:"numeric", month:"short", day:"2-digit" });
+            cDateVal.textContent = formatHU(d, { year:"numeric", month:"long", day:"2-digit" });
           }catch{ cDateVal.textContent = cDate.value; }
         } else cDateVal.textContent = "—";
       }
     }
 
+
+
+    function prepareCalAddDefaults(){
+      // Ensure date + time defaults are valid and pretty on entry
+      if(cTime){
+        if(!cTime.value) cTime.value = nowWholeHour();
+        const snapped = clampToWholeHour(cTime.value);
+        if(snapped) cTime.value = snapped;
+      }
+      updateCalPickLabels();
+    }
     // Make the icon pickers open the native pickers (where supported)
     function openNativePicker(input){
       if(!input) return;
@@ -2257,11 +2254,11 @@
       try{ input.focus({preventScroll:true}); }catch{ try{ input.focus(); }catch{} }
       try{ input.click(); }catch{}
     }
-    if(cTimePick){
-      cTimePick.addEventListener("click", (e)=>{ e.preventDefault(); openNativePicker(cTime); });
+    if(cTimeBtn){
+      cTimeBtn.addEventListener("click", (e)=>{ e.preventDefault(); openNativePicker(cTime); });
     }
-    if(cDatePick){
-      cDatePick.addEventListener("click", (e)=>{ e.preventDefault(); openNativePicker(cDate); });
+    if(cDateBtn){
+      cDateBtn.addEventListener("click", (e)=>{ e.preventDefault(); openNativePicker(cDate); });
     }
 
     // Enforce whole-hour time selection
