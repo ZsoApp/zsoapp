@@ -1435,7 +1435,7 @@
                 <div class="calPickCenter" aria-label="Dátum és idő">
                   <label class="calIconBtn calIconLabel" aria-label="Idő kiválasztása">
                     <span class="calIconGlyph" aria-hidden="true">⏰</span>
-                    <span class="calIconValue" id="cTimeVal">--:--</span>
+                    <span class="calIconValue" id="cTimeVal"></span>
                     <input id="cTime" type="time" step="3600" class="calOverlayInput" />
                   </label>
 
@@ -1972,8 +1972,9 @@
 
     function openCalAddPage(autofocus=true){
       show("caladd");
-      // alapérték: a jelenleg kijelölt nap (ha nincs, akkor az utolsó)
-      const base = (selectedDate && selectedDate.trim()) ? selectedDate : (getLastSelectedDay() || todayYMD());
+      // alapérték: az utoljára kijelölt nap (megbízhatóbb), különben a jelenlegi, különben ma
+      const last = (getLastSelectedDay && getLastSelectedDay()) ? getLastSelectedDay() : "";
+      const base = (last && last.trim()) ? last : ((selectedDate && selectedDate.trim()) ? selectedDate : todayYMD());
       selectedDate = base;
       setLastSelectedDay(base);
       try{ cDate.value = base; }catch{}
@@ -2725,9 +2726,20 @@
         day.appendChild(taskWrap);
 
         const singlesAll = sortSingles(getCalSinglesForDate(ymd));
-        const total = singlesAll.length;
+        const rangesAll = getCalRangesIntersecting(ymd, ymd);
+        const total = singlesAll.length + rangesAll.length;
 
         // Desktopon mutatjuk a feladatokat a kártyán, telefonon rejtve van CSS-ből
+        rangesAll.forEach(r => {
+          const block = document.createElement("div");
+          block.className = "calTask";
+          const when = (r.time && r.time.trim()) ? r.time : "—";
+          block.innerHTML = `
+            <div class="m">${escapeHtml(when)}</div>
+            <div class="t">↔ ${escapeHtml(r.title)}</div>
+          `;
+          taskWrap.appendChild(block);
+        });
         singlesAll.forEach(t => {
           const block = document.createElement("div");
           block.className = "calTask";
@@ -3029,7 +3041,7 @@
     }
   }
   function syncLabels(){
-    if(cTimeVal) cTimeVal.textContent = (cTime && cTime.value) ? cTime.value : "--:--";
+    if(cTimeVal) cTimeVal.textContent = (cTime && cTime.value) ? cTime.value : "";
     if(cDateVal){
       if(cDate && cDate.value){
         const d = parseYMD(cDate.value);
@@ -3041,21 +3053,18 @@
   }
 
   if(cTime){
-    // Default to whole hour if empty
-    if(!cTime.value) cTime.value = nowWholeHour();
-    cTime.value = clampToWholeHour(cTime.value);
-
-    // Enforce whole hour on any change
+    // Only show/set time if the user actually chooses one.
+    // Enforce whole hour on any change.
     cTime.addEventListener("input", ()=>{
+      if(!cTime.value){ syncLabels(); return; }
       const clamped = clampToWholeHour(cTime.value);
       if(clamped && clamped !== cTime.value) cTime.value = clamped;
       syncLabels();
     });
-
-    // Also enforce on focus/click (some browsers keep minutes)
-    cTime.addEventListener("focus", ()=>{
-      const clamped = clampToWholeHour(cTime.value || nowWholeHour());
-      if(clamped) cTime.value = clamped;
+    cTime.addEventListener("change", ()=>{
+      if(!cTime.value){ syncLabels(); return; }
+      const clamped = clampToWholeHour(cTime.value);
+      if(clamped && clamped !== cTime.value) cTime.value = clamped;
       syncLabels();
     });
   }
