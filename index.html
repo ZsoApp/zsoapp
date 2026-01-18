@@ -1,0 +1,3145 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>Zsolt adatbázisa</title>
+  <meta name="theme-color" content="#050608"/>
+  <style>
+    :root{
+      --bg0:#050608;
+      --bg1:#07080b;
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.55);
+      --muted2: rgba(255,255,255,0.40);
+      --shadow: 0 30px 80px rgba(0,0,0,0.55);
+      --r3: 28px;
+      --ease: cubic-bezier(.16,1,.3,1);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; background: var(--bg0); overscroll-behavior: none; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(180,200,255,0.08), transparent 55%),
+        radial-gradient(900px 700px at 75% 30%, rgba(255,255,255,0.05), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow:hidden;
+    }
+    .noise{
+      position:fixed; inset:0;
+      pointer-events:none;
+      opacity:0.10;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+    .app{
+      height:100%;
+      display:flex;
+      align-items:stretch;
+      justify-content:stretch;
+      padding: 0;
+    }
+    .stage{
+      width:100vw;
+      height:100vh;
+      position:relative;
+      border-radius: 0px;
+      background: rgba(0,0,0,0.18);
+      box-shadow: none;
+      border: 1px solid rgba(255,255,255,0.06);
+      overflow:hidden;
+    }
+    .stage::before{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), transparent 18%);
+      opacity:0.45;
+      pointer-events:none;
+    }
+
+    /* Mobile full-screen list/add layout */
+    .fullPage{ height:100%; width:100%; display:flex; flex-direction:column; padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); gap: 12px; }
+.mobileTop{ padding: 12px 12px 10px; border-radius: 22px; }
+    .mobileActions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .mobileActions .btn{ padding:10px 12px; }
+    .mobileActions .seg{ margin-right: auto; }
+    .listPanel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; border-radius: 26px; }
+    .listPanel .panelHead{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
+    .listTools{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .listTools .smallNote{ margin:0; text-align:right; }
+    .paperBody{ flex:1 1 auto; min-height:0; overflow:hidden; }
+
+    .formPanel{ flex:1 1 auto; min-height:0; border-radius: 26px; display:flex; flex-direction:column; }
+    .formBody{ padding: 14px; display:flex; flex-direction:column; gap: 12px; overflow:hidden; }
+
+    @media (max-width: 520px){
+      .fullPage{ padding: calc(10px + env(safe-area-inset-top)) 10px 10px; gap: 10px; }
+      .mobileTop{ border-radius: 20px; }
+      .mobileActions{ justify-content:space-between; }
+      .mobileActions .seg{ order:3; width:100%; }
+      .mobileActions .btn{ flex:1 1 auto; }
+      .listTools{ width:100%; justify-content:space-between; }
+      .listTools #btnClearAll{ padding:10px 12px; }
+    }
+
+    /* Views */
+    .view{
+      position:absolute; inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 26px;
+      opacity:0;
+      transform: translateY(14px);
+      filter: blur(8px);
+      transition: opacity 420ms var(--ease), transform 420ms var(--ease), filter 420ms var(--ease);
+      pointer-events:none;
+    }
+    .view.active{
+      opacity:1;
+      transform: translateY(0);
+      filter: blur(0);
+      pointer-events:auto;
+    }
+    .view.zoom-enter{
+      opacity:1;
+      transform: scale(0.92);
+      filter: blur(10px);
+      transition: opacity 520ms var(--ease), transform 520ms var(--ease), filter 520ms var(--ease);
+    }
+    .view.zoom-enter.active{
+      transform: scale(1);
+      filter: blur(0);
+    }
+
+    /* Splash */
+    .splashWrap{ width:100%; max-width: 900px; text-align:center; }
+    .kicker{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .38em;
+      text-transform: uppercase;
+      color: var(--muted2);
+      margin-bottom: 14px;
+    }
+    .title{
+      font-size: clamp(38px, 6vw, 64px);
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      margin:0;
+      line-height: 1.05;
+      background: linear-gradient(90deg, rgba(255,255,255,0.95), rgba(255,255,255,0.65), rgba(255,255,255,0.40));
+      -webkit-background-clip: text;
+      background-clip:text;
+      color: transparent;
+      text-shadow: 0 0 35px rgba(255,255,255,0.06);
+    }
+    .splashEnter{
+      opacity:0;
+      transform: translateY(84px);
+      filter: blur(12px);
+      animation: rise 900ms var(--ease) forwards;
+    }
+    @keyframes rise{ to{ opacity:1; transform: translateY(0); filter: blur(0); } }
+    .bar{
+      margin: 34px auto 0;
+      width: 180px;
+      height: 5px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.10);
+      overflow:hidden;
+    }
+    .bar > i{
+      display:block;
+      width:100%;
+      height:100%;
+      background: rgba(255,255,255,0.42);
+      transform: translateX(-100%);
+      animation: load 1000ms ease-in-out forwards;
+      animation-delay: 620ms;
+    }
+    @keyframes load{ to{ transform: translateX(0%); } }
+
+    /* Mode Select */
+    .modeWrap{ width:100%; max-width: 980px; }
+    .centerHead{ text-align:center; margin-bottom: 18px; }
+    .centerHead .small{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .36em;
+      text-transform: uppercase;
+      color: var(--muted2);
+    }
+    .centerHead .big{
+      margin: 10px 0 0;
+      font-size: clamp(26px, 3.2vw, 40px);
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+    .cards{
+      margin-top: 26px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 760px){ .cards{ grid-template-columns: 1fr; } }
+    .card{
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.24);
+      backdrop-filter: blur(14px);
+      padding: 22px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
+      cursor:pointer;
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease);
+      position:relative;
+      overflow:hidden;
+      text-align:left;
+    }
+    .card::before{
+      content:"";
+      position:absolute; inset:-40% -40%;
+      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.10), transparent 55%);
+      opacity:0.55;
+      transform: translateY(8px);
+      transition: opacity 220ms var(--ease);
+      pointer-events:none;
+    }
+    .card:hover{
+      transform: scale(1.02);
+      border-color: rgba(255,255,255,0.16);
+      background: rgba(0,0,0,0.28);
+    }
+    .card:hover::before{ opacity:0.75; }
+    .cardTop{ display:flex; gap: 14px; align-items:flex-start; }
+    .icon{
+      width: 52px; height: 52px;
+      display:flex; align-items:center; justify-content:center;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      font-size: 24px;
+      flex: 0 0 auto;
+    }
+    .cardTitle{
+      font-size: 20px;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      margin:0;
+    }
+    .cardSub{
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .divider{
+      margin-top: 18px;
+      height:1px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06), transparent);
+      opacity:0.8;
+    }
+    .enter{
+      margin-top: 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .28em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.42);
+      transition: color 220ms var(--ease);
+    }
+    .card:hover .enter{ color: rgba(255,255,255,0.72); }
+    .foot{
+      margin-top: 18px;
+      text-align:center;
+      font-size: 12px;
+      color: var(--muted2);
+    }
+
+    /* Buttons */
+    .addRow{
+      margin-top: 16px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .addFab{
+      position:relative;
+      width: 64px; height: 64px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(14px);
+      cursor:pointer;
+      transition: transform 220ms var(--ease), border-color 220ms var(--ease), background 220ms var(--ease);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden;
+    }
+    .addFab:hover{ transform: scale(1.03); border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.06); }
+    .addFab:active{ transform: scale(0.98); }
+    .addFab::before{
+      content:"";
+      position:absolute; inset:-60% -60%;
+      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.16), transparent 55%);
+      opacity:0.55;
+      pointer-events:none;
+    }
+    .addFab span{ font-family: var(--mono); font-size: 26px; color: rgba(255,255,255,0.85); }
+    .addHint{
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.46);
+      user-select:none;
+    }
+
+    /* Tunnel */
+    .tunnel{
+      position:absolute; inset:0;
+      pointer-events:none;
+      opacity:0;
+      transition: opacity 520ms var(--ease);
+      background:
+        radial-gradient(140px 140px at var(--x, 50%) var(--y, 50%), rgba(255,255,255,0.12), transparent 65%),
+        radial-gradient(520px 520px at var(--x, 50%) var(--y, 50%), rgba(255,255,255,0.10), transparent 70%),
+        radial-gradient(1000px 1000px at var(--x, 50%) var(--y, 50%), rgba(0,0,0,0.75), rgba(0,0,0,0.95));
+    }
+    .tunnel.on{ opacity:1; }
+
+    /* Panels */
+    .panel{
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.22);
+      backdrop-filter: blur(14px);
+      overflow:hidden;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+    }
+    .panelHead{
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex: 0 0 auto;
+    }
+    .panelHead .cap{
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .30em;
+      text-transform: uppercase;
+      color: var(--muted2);
+    }
+    .panelHead .h{
+      margin-top: 8px;
+      font-size: 16px;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+    }
+    .panelBody{
+      padding: 12px;
+      overflow:auto;
+      max-height: 100%;
+      flex: 1 1 auto;
+      min-height:0;
+    }
+
+    /* extra scroll space so last item is always visible */
+    .scrollPad{ padding-bottom: 64px !important; }
+
+    /* Topbar */
+    .topbar{
+      flex: 0 0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 18px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.20);
+      backdrop-filter: blur(14px);
+      gap: 12px;
+    }
+    .brand{ display:flex; align-items:center; gap: 12px; min-width: 0; }
+    .brandBadge{
+      width:42px;height:42px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      display:flex; align-items:center; justify-content:center;
+      font-size: 18px;
+      flex: 0 0 auto;
+    }
+    .brandText{ min-width:0; }
+    .brandText .small{ font-size: 12px; color: var(--muted2); }
+    .brandText .big{ font-size: 16px; font-weight: 650; margin-top: 2px; letter-spacing: -0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .actions{ display:flex; gap: 10px; flex-wrap: wrap; justify-content:flex-end; align-items:center; }
+    .btn{
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.22);
+      color: rgba(255,255,255,0.86);
+      padding: 10px 14px;
+      font-size: 13px;
+      cursor:pointer;
+      transition: background 200ms var(--ease), border-color 200ms var(--ease), transform 200ms var(--ease);
+      white-space: nowrap;
+    }
+    .btn:hover{ background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); }
+    .btn:active{ transform: scale(0.98); }
+
+    /* segmented */
+    .seg{
+      display:flex;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.22);
+      overflow:hidden;
+    }
+    .seg button{
+      border:0;
+      background:transparent;
+      color: rgba(255,255,255,0.70);
+      padding: 10px 12px;
+      font-size: 13px;
+      cursor:pointer;
+      transition: background 200ms var(--ease), color 200ms var(--ease);
+      display:flex; align-items:center; gap:8px;
+    }
+    .hidden{ display:none !important; }
+    .calSeg{ display:none; }
+    .seg button:hover{ background: rgba(255,255,255,0.05); }
+    .seg button.active{
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.92);
+    }
+
+    /* Toggle chips */
+    .togRow{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items:center;
+      margin-top: 10px;
+    }
+    .tog{
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.22);
+      color: rgba(255,255,255,0.88);
+      padding: 12px 14px;
+      cursor:pointer;
+      transition: background 180ms var(--ease), border-color 180ms var(--ease), transform 180ms var(--ease);
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      user-select:none;
+    }
+    .tog:hover{ background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); transform: translateY(-1px); }
+    .tog:active{ transform: scale(0.99); }
+    .tog .k{
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.50);
+    }
+    .tog .v{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.92);
+    }
+    .togMini{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.22);
+      color: rgba(255,255,255,0.86);
+      padding: 10px 12px;
+      cursor:pointer;
+      font-size: 13px;
+      transition: background 180ms var(--ease), border-color 180ms var(--ease);
+      user-select:none;
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+    }
+    .togMini:hover{ background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); }
+
+    /* Inputs */
+    .field{ display:flex; flex-direction:column; gap: 8px; margin-top: 10px; }
+    label{
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .26em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.46);
+    }
+    input{
+      width:100%;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.22);
+      color: rgba(255,255,255,0.90);
+      padding: 12px 14px;
+      font-size: 16px;
+      outline:none;
+      transition: border-color 200ms var(--ease), background 200ms var(--ease);
+    }
+    input:focus{
+      border-color: rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.04);
+    }
+    .row2{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 560px){ .row2{ grid-template-columns: 1fr; } }
+
+    .pillRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .pill{
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+    }
+    .danger{
+      border-color: rgba(255,80,80,0.35) !important;
+      background: rgba(255,80,80,0.06) !important;
+    }
+    .smallNote{
+      font-size: 12px;
+      color: rgba(255,255,255,0.46);
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+    .paperLine{
+      height:1px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06), transparent);
+      opacity:0.85;
+      margin: 12px 0;
+    }
+
+    /* LIST VIEW */
+    .paperWrap{ width:100%; height:100%; display:flex; flex-direction:column; min-height:0; }
+    .paperGrid{ flex:1 1 auto; display:grid; grid-template-columns: 1fr 360px; gap:14px; padding:14px; min-height:0; }
+    @media (max-width: 980px){ .paperGrid{ grid-template-columns: 1fr; } }
+    .paperPanel{
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)),
+        rgba(0,0,0,0.10);
+      backdrop-filter: blur(14px);
+      overflow:hidden;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+    }
+    .paperBody{ padding: 16px 18px; overflow:auto; flex:1 1 auto; min-height:0;
+      /* Extra bottom space so the last task is fully visible above the phone safe-area */
+      padding-bottom: calc(28px + env(safe-area-inset-bottom));
+      scroll-padding-bottom: calc(28px + env(safe-area-inset-bottom));
+    }
+
+    /* Spacer inside the scroll area to prevent the last item from being cut off */
+    #paperList::after{ content:""; display:block; height: calc(32px + env(safe-area-inset-bottom)); }
+    
+    /* prevent text selection on tasks */
+    .paperItem, .paperItem *{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+    .paperDel{ -webkit-user-select:none; user-select:none; }
+.paperItem{
+      -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+      touch-action: manipulation;
+      display:flex;
+      gap: 12px;
+      align-items:flex-start;
+      padding: 10px 10px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.14);
+      position:relative;
+      transform: translateY(0);
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease);
+      user-select:none;
+    
+      touch-action: manipulation;
+    }
+    .paperItem + .paperItem{ margin-top: 10px; }
+    .paperItem:hover{
+      transform: translateY(-3px);
+      background: rgba(255,255,255,0.03);
+      border-color: rgba(255,255,255,0.12);
+    }
+    .paperItem.done{ opacity:0.62; }
+    .paperItem.done::after{
+      content:"";
+      position:absolute;
+      left: 42px;
+      right: 72px;
+      top: 22px;
+      height:1px;
+      background: rgba(255,255,255,0.45);
+      pointer-events:none;
+    }
+    .paperItem.hold{
+      border-color: rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.04);
+      transform: translateY(-2px) scale(0.995);
+    }
+    .dot{
+      width: 10px; height: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.06);
+      margin-top: 6px;
+      flex: 0 0 auto;
+    }
+    .paperText{ flex: 1 1 auto; min-width: 0; }
+    .paperTitle{
+      font-size: 15px;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+    .paperMeta{
+      margin-top: 6px;
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items:center;
+      color: rgba(255,255,255,0.54);
+      font-size: 12px;
+      font-family: var(--mono);
+      letter-spacing: .10em;
+      text-transform: uppercase;
+    }
+    .chip{
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.52);
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.03);
+      padding: 5px 10px;
+      border-radius: 999px;
+    }
+    .paperDel{
+      border-radius: 999px;
+      border: 1px solid rgba(255,80,80,0.35);
+      background: rgba(255,80,80,0.06);
+      color: rgba(255,255,255,0.75);
+      padding: 6px 10px;
+      font-size: 11px;
+      font-family: var(--mono);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      cursor:pointer;
+      transition: transform 200ms var(--ease), background 200ms var(--ease);
+      flex: 0 0 auto;
+      align-self:flex-start;
+    }
+    .paperDel:hover{ background: rgba(255,80,80,0.10); }
+    .paperDel:active{ transform: scale(0.98); }
+
+    /* ADD */
+    .formWrap{ width:100%; max-width: 980px; height:100%; display:flex; flex-direction:column; gap:14px; min-height:0; }
+    .formGrid{ flex:1 1 auto; display:grid; grid-template-columns: 1fr 420px; gap:14px; min-height:0; }
+    @media (max-width: 980px){ .formGrid{ grid-template-columns: 1fr; } }
+
+    /* CALENDAR */
+    .calWrap{ width:100%; height:100%; display:flex; flex-direction:column; min-height:0; padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); gap: 12px; }
+    .calGrid{ flex:1 1 auto; display:grid; grid-template-columns: 1fr 420px; gap:14px; padding:14px; min-height:0; }
+    @media (max-width: 980px){ .calGrid{ grid-template-columns: 1fr; } }
+
+    /* Week stack: range bars + day grid */
+    .weekStack{ display:flex; flex-direction:column; gap:12px; }
+
+    .rangeLayer{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 12px;
+      align-items:stretch;
+    }
+    .rangeBar{
+      height: 42px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      padding: 10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      overflow:hidden;
+      cursor: default;
+    }
+    .rangeBar .t{
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .rangeBar .m{
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    /* WEEK GRID: 7 nap (egymás alatt, görgethető oszlopban) */
+    .weekWide{
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+      padding: 12px;
+      overflow-y:auto;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling: touch;
+    
+      padding-bottom: calc(48px + env(safe-area-inset-bottom));
+      scroll-padding-bottom: calc(48px + env(safe-area-inset-bottom));
+    }
+    .weekWide::-webkit-scrollbar{ width: 0; }
+    
+    .weekWide::after{
+      content:"";
+      display:block;
+      height: calc(32px + env(safe-area-inset-bottom));
+      flex-shrink: 0;
+    }
+.dayWide{
+      flex: 0 0 auto;
+      width: 100%;
+
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.18);
+      padding: 12px;
+      cursor:pointer;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease);
+      position:relative;
+
+      display:flex;
+      flex-direction:column;
+
+      min-height: 180px;
+      height: auto;
+      overflow: visible;
+    }
+    .dayWide:hover{
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.03);
+    }
+    .dayWide.sel{
+      border-color: rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.04);
+    }
+    .dayWide.today{
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset;
+    }
+    .dayWideTop{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      padding: 0 2px;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 2;
+      flex: 0 0 auto;
+    }
+    .dayWideTop .w{
+      font-size: 12px;
+      color: rgba(255,255,255,0.72);
+      font-family: var(--mono);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .dayWideTop .d{
+      font-size: 12px;
+      color: rgba(255,255,255,0.44);
+      font-family: var(--mono);
+    }
+
+    /* Feladatok a naptár rublikáiban: egymás mellé, több sorban, a kártya nő */
+    .dayTasksWrap{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+      align-content:flex-start;
+    }
+    .dayWide .calTask{
+      margin: 0;
+      padding: 6px 8px;
+      border-radius: 12px;
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      max-width: 100%;
+    }
+    .dayWide .calTask .t{
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dayWide .calTask .m{
+      margin: 0;
+      font-size: 10px;
+      letter-spacing: .10em;
+      opacity: 0.75;
+      flex: 0 0 auto;
+    }
+
+    
+    .calTask .m .chipMeta{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.75);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .calTask .m .chipMeta.time{
+      border-color: rgba(255,255,255,0.16);
+      background: rgba(0,0,0,0.25);
+      color: rgba(255,255,255,0.85);
+    }
+.miniPill{
+      position:absolute;
+      right: 10px;
+      bottom: 10px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.22);
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+    .calTask{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.22);
+      padding: 10px;
+      margin-top: 8px;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease);
+      flex: 0 0 auto;
+    }
+    .calTask:hover{
+      transform: translateY(-2px);
+      background: rgba(255,255,255,0.03);
+      border-color: rgba(255,255,255,0.14);
+    }
+    .calTask .t{
+      font-size: 13px;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      line-height:1.25;
+      word-break: break-word;
+    }
+    .calTask .m{
+      margin-top: 6px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.50);
+      font-family: var(--mono);
+      letter-spacing:.08em;
+      text-transform: uppercase;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .calTask .del{
+      margin-top: 8px;
+      display:inline-block;
+      border-radius: 999px;
+      border: 1px solid rgba(255,80,80,0.35);
+      background: rgba(255,80,80,0.06);
+      color: rgba(255,255,255,0.72);
+      padding: 6px 10px;
+      font-size: 11px;
+      font-family: var(--mono);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      cursor:pointer;
+    }
+    .calTask .del:hover{ background: rgba(255,80,80,0.10); }
+
+    /* overlays */
+    .overlay{
+      position:absolute;
+      inset:0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(14px);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity 220ms var(--ease);
+      display:flex;
+      align-items:stretch;
+      justify-content:center;
+      padding: 18px;
+      z-index: 50;
+    }
+    .overlay.on{ opacity:1; pointer-events:auto; }
+    .overlayCard{
+      width:100%;
+      height:100%;
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.30);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      box-shadow: 0 30px 90px rgba(0,0,0,0.55);
+    }
+
+    /* Day fullscreen view (06–22, bigger spacing) */
+    .dayViewGrid{ flex:1 1 auto; display:grid; grid-template-columns: 1fr 420px; gap:14px; padding:14px; min-height:0; }
+    @media (max-width: 980px){ .dayViewGrid{ grid-template-columns: 1fr; } }
+    .timeline{
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.20);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    .timelineHead{
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .timelineHead .big{ font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
+    .timelineHead .small{
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.46);
+      white-space:nowrap;
+    }
+    .timelineBody{
+      flex:1 1 auto;
+      overflow:auto;
+      position:relative;
+      padding: 14px 12px 28px;
+      min-height:0;
+    }
+    .hourRow{
+      position:relative;
+      height: 76px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display:flex;
+      align-items:flex-start;
+      gap: 10px;
+      padding-top: 10px;
+    }
+    .hourLabel{
+      width: 64px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      flex: 0 0 auto;
+      padding-left: 4px;
+    }
+    .hourLine{ flex:1 1 auto; height:1px; background: rgba(255,255,255,0.06); margin-top: 10px; }
+    .taskBlocks{
+      position:absolute;
+      left: 96px;
+      right: 12px;
+      top: 14px;
+      bottom: 28px;
+      pointer-events:none;
+    }
+    .blockTask{
+      position:absolute;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      padding: 10px 10px;
+      pointer-events:auto;
+      overflow:hidden;
+    }
+    .blockTask .t{ font-size: 13px; font-weight: 650; letter-spacing:-0.01em; line-height:1.2; word-break: break-word; }
+    .blockTask .m{
+      margin-top: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items:center;
+    }
+    .blockTask .del{
+      margin-top: 8px;
+      display:inline-block;
+      border-radius: 999px;
+      border: 1px solid rgba(255,80,80,0.35);
+      background: rgba(255,80,80,0.06);
+      color: rgba(255,255,255,0.72);
+      padding: 6px 10px;
+      font-size: 11px;
+      font-family: var(--mono);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      cursor:pointer;
+    }
+    .blockTask .del:hover{ background: rgba(255,80,80,0.10); }
+
+    /* Month picker tiles */
+    .monthGrid{ flex:1 1 auto; display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; padding:14px; overflow:auto; }
+    @media (max-width: 980px){ .monthGrid{ grid-template-columns: repeat(2, 1fr); } }
+    .monthTile{
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.22);
+      padding: 16px;
+      cursor:pointer;
+      transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease);
+      position:relative;
+      overflow:hidden;
+      min-height: 96px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+    .monthTile:hover{
+      transform: translateY(-2px);
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.14);
+    }
+    .monthTile .m1{
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.46);
+    }
+    .monthTile .m2{ margin-top: 8px; font-size: 18px; font-weight: 650; letter-spacing: -0.01em; }
+    .monthTile .m3{
+      margin-top: 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+    }
+    .monthTile.current{ border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); }
+
+    /* -------------------------
+       MOBILE LAYOUT (phone)
+       - full screen
+       - no nested scroll areas
+    ------------------------- */
+    @media (max-width: 640px){
+      html,body{ background: var(--bg0); }
+
+      body{ overflow:hidden; }
+
+      .app{ padding:0; align-items:stretch; justify-content:stretch; }
+      .stage{
+        width:100vw;
+        height:100vh;
+        border-radius:0;
+        box-shadow:none;
+        border:0;
+        background: rgba(0,0,0,0.20);
+      }
+       .view{ padding: calc(14px + env(safe-area-inset-top)) 14px 14px; }
+
+      .topbar{ padding:12px 12px; border-radius:0 !important; }
+      .actions{ gap:8px; }
+      .btn{ padding:10px 12px; font-size:12px; border-radius:16px; }
+      .seg{ border-radius:16px; }
+      .seg button{ padding:10px 10px; font-size:12px; }
+
+      .cards{ grid-template-columns:1fr; }
+      .card{ padding:18px; border-radius:22px; }
+      .addFab{ width:60px; height:60px; border-radius:20px; }
+
+      .paperGrid, .formGrid, .calGrid, .dayViewGrid{
+        grid-template-columns:1fr !important;
+        padding:10px !important;
+        gap:10px !important;
+      }
+
+      .panel, .paperPanel, .overlayCard{ border-radius:22px; }
+      .panelBody, .timelineBody, .monthGrid{ overflow:hidden !important; }
+      .paperBody{ overflow:auto !important; }
+      .weekWide{ overflow:auto !important; }
+      .scrollPad{ padding-bottom:12px !important; }
+
+      .paperBody{
+        padding:14px 14px 12px;
+        padding-bottom: calc(28px + env(safe-area-inset-bottom));
+        scroll-padding-bottom: calc(28px + env(safe-area-inset-bottom));
+      }
+      .paperItem{ padding:10px; border-radius:16px; }
+      .paperItem.done::after{ left:34px; right:56px; top:20px; }
+      .paperDel{ padding:6px 8px; font-size:10px; }
+      .paperTitle{ font-size:14px; }
+      .paperMeta{ font-size:10px; letter-spacing:.08em; }
+      .weekWide{ gap:10px; padding:10px; }
+      .rangeLayer{ display:none !important; }
+      .calSeg{ display:flex; width:100%; }
+      #calPanelWeek, #view-caladd{ display:none; }
+      #calPanelWeek.calShow, #view-caladd.calShow{ display:flex; flex-direction:column; }
+      .dayWide{ min-height:84px; padding:10px; border-radius:18px; }
+      .dayWideTop .w{ font-size:11px; }
+      .dayWideTop .d{ font-size:11px; }
+      .dayWide .calTask{ display:inline-flex; }
+
+      .rangeBar{ height:36px; padding:8px 10px; border-radius:14px; }
+      .miniPill{ font-size:10px; padding:5px 9px; }
+
+      .hourRow{ height:40px; padding-top:6px; }
+      .taskBlocks{ left:88px; }
+      .blockTask{ padding:8px; }
+    }
+    /* --- Mobile-first full-screen tweaks (v2) --- */
+    .paperWrap, .formWrap, .calWrap{ width:100%; height:100%; max-width:none; }
+    .paperWrap{ display:flex; flex-direction:column; gap:12px; }
+    .paperGrid.single{ flex:1 1 auto; min-height:0; display:flex; }
+    .paperGrid.single .paperPanel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+    .paperGrid.single .paperBody{ flex:1 1 auto; min-height:0; overflow:auto; }
+
+    .formWrap{ width:100%; height:100%; display:flex; flex-direction:column; gap:12px; }
+    .formGrid.single{ flex:1 1 auto; min-height:0; display:flex; }
+    .formGrid.single .panel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+    .formGrid.single .panelBody{ flex:1 1 auto; min-height:0; overflow:hidden; padding:14px; }
+
+    .topbar{ position:sticky; top:0; z-index:5; }
+    .topbar .actions{ display:flex; flex-wrap:wrap; justify-content:flex-end; gap:10px; }
+    .topbar .actions .seg{ order:1; }
+    .topbar .actions .btn{ order:2; }
+
+    /* Make action buttons a bit more touch-friendly */
+    .btn{ min-height:42px; }
+    .seg button{ min-height:42px; }
+
+    @media (max-width: 520px){
+      .topbar{ padding: 14px 14px; border-radius: 0; }
+      .brandBadge{ width:40px; height:40px; border-radius:14px; }
+      .brandText .big{ font-size: 16px; }
+      .brandText .small{ font-size: 11px; }
+      .topbar .actions{ gap:8px; }
+      .btn{ padding: 10px 12px; font-size: 12px; border-radius: 14px; }
+      .seg{ border-radius: 16px; }
+      .seg button{ padding: 9px 10px; font-size: 11px; }
+      .paperPanel .panelHead .h{ font-size: 16px; }
+    }
+
+  
+    /* Calendar tab visibility */
+    /* desktopon is látszódhat, mobilon a media query úgyis kezeli */
+    .calSeg{ display:flex; }
+    #calPanelWeek, #view-caladd{ display:flex; flex-direction:column; }
+    
+/* === Calendar add-task: centered icon pickers (date/time) === */
+.calPickCenter{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:14px;
+  margin: 10px 0 6px;
+  flex-wrap:wrap;
+}
+.calIconBtn{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:12px 14px;
+  min-width:132px;
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,0.10);
+  background:rgba(0,0,0,0.18);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
+  cursor:pointer;
+  user-select:none;
+}
+.calIconGlyph{ font-size:20px; line-height:1; }
+.calIconValue{
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 13px;
+  color: rgba(255,255,255,0.88);
+}
+.calOverlayInput{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  opacity:0.001; /* keep it clickable */
+  cursor:pointer;
+  border:0;
+  background:transparent;
+}
+/* === End calendar add-task pickers === */
+
+
+/* === PATCH: soften date/time icons on add-task screen === */
+.addTaskIcon{
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  color: rgba(255,255,255,0.65) !important;
+  backdrop-filter: blur(6px);
+}
+.addTaskIcon:hover,
+.addTaskIcon:active{
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+/* === END PATCH === */
+
+
+/* === PATCH: make add-task date/time icons darker === */
+.addTaskIcon{
+  background: rgba(0,0,0,0.28) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  color: rgba(255,255,255,0.75) !important;
+}
+.addTaskIcon:hover,
+.addTaskIcon:active{
+  background: rgba(0,0,0,0.36) !important;
+  border-color: rgba(255,255,255,0.10) !important;
+}
+/* === END PATCH === */
+
+
+/* === PATCH: modern SVG icons for calendar add-task pickers === */
+.calIconGlyph{ display:inline-flex; align-items:center; justify-content:center; }
+.calSvg{ width:20px; height:20px; display:block; }
+/* === END PATCH === */
+
+
+/* === PATCH: modern icons on list add labels === */
+.miniGlyph{ display:inline-flex; align-items:center; justify-content:center; margin-right:8px; opacity:0.9; }
+.miniSvg{ width:16px; height:16px; }
+/* === END PATCH === */
+
+</style>
+</head>
+<body>
+  <div class="noise"></div>
+
+  <div class="app">
+    <div class="stage">
+      <div class="tunnel" id="tunnel"></div>
+
+      <!-- overlays -->
+      <div class="overlay" id="overlayDay">
+        <div class="overlayCard">
+          <div class="topbar">
+            <div class="brand">
+              <div class="brandBadge">🗓️</div>
+              <div class="brandText">
+                <div class="small">Napi nézet</div>
+                <div class="big" id="dayViewTitle">—</div>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn" id="btnDayClose">Bezár</button>
+            </div>
+          </div>
+
+          <div class="dayViewGrid">
+            <div class="timeline">
+              <div class="timelineHead">
+                <div class="big">Idősáv (06–22)</div>
+                <div class="small" id="dayViewMeta">—</div>
+              </div>
+              <div class="timelineBody" id="timelineBody">
+                <div class="taskBlocks" id="taskBlocks"></div>
+              </div>
+            </div>
+
+            <div class="panel" id="dayPanelTasks">
+              <div class="panelHead">
+                <div class="cap">feladatok</div>
+                <div class="h">Aznapi lista (idő szerint)</div>
+              </div>
+              <div class="panelBody scrollPad" id="dayTaskList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay" id="overlayMonths">
+        <div class="overlayCard">
+          <div class="topbar">
+            <div class="brand">
+              <div class="brandBadge">🧭</div>
+              <div class="brandText">
+                <div class="small">Naptár</div>
+                <div class="big">Hónapválasztó</div>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn" id="btnMonthsClose">Bezár</button>
+            </div>
+          </div>
+          <div class="monthGrid" id="monthGrid"></div>
+        </div>
+      </div>
+
+      <!-- LIST VIEW -->
+      <!-- SPLASH (betöltő) -->
+      <section class="view" id="view-splash">
+        <div class="splashWrap splashEnter">
+          <div class="kicker">Zsolt adatbázisa</div>
+          <h1 class="title">Betöltés…</h1>
+          <div class="bar"><i></i></div>
+        </div>
+      </section>
+
+      <section class="view active" id="view-list">
+        <div class="paperWrap fullPage">
+          <div class="topbar mobileTop">
+            <div class="brand">
+              <div class="brandBadge" id="listModeIcon">💼</div>
+              <div class="brandText">
+                <div class="small">Zsolt adatbázisa</div>
+                <div class="big" id="listModeLabel">Vállalkozás</div>
+              </div>
+            </div>
+
+            <div class="actions mobileActions">
+              <div class="seg" title="Gyors váltás">
+                <button id="segBusiness"><span>💼</span><span>Váll.</span></button>
+                <button id="segPersonal"><span>🌿</span><span>Magán</span></button>
+              </div>
+
+              <button class="btn" id="btnListAdd">＋ Feladat</button>
+              <button class="btn" id="btnListCalendar">Naptár</button>
+            </div>
+          </div>
+
+          <div class="paperPanel listPanel">
+            <div class="panelHead">
+              <div>
+                <div class="cap">lista</div>
+                <div class="h">Feladatok (prioritás szerint)</div>
+              </div>
+              <div class="listTools">
+                <div class="smallNote" id="countNote"></div>
+                <button class="btn" id="btnClearAll">Összes törlése</button>
+              </div>
+            </div>
+            <div class="paperBody" id="paperList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ADD TASK (LIST DB ONLY) -->
+      <section class="view zoom-enter" id="view-add">
+        <div class="formWrap fullPage">
+          <div class="topbar mobileTop">
+            <div class="brand">
+              <div class="brandBadge">＋</div>
+              <div class="brandText">
+                <div class="small">Zsolt adatbázisa</div>
+                <div class="big">Új feladat</div>
+              </div>
+            </div>
+            <div class="actions mobileActions">
+              <button class="btn" id="btnAddBack">Vissza</button>
+              <button class="btn" id="btnToCalendarFromAdd">Naptár</button>
+            </div>
+          </div>
+
+          <div class="panel formPanel">
+            <div class="panelHead">
+              <div>
+                <div class="cap">bevitel</div>
+                <div class="h">Lista-feladat</div>
+              </div>
+              <div class="pillRow" style="margin:0; justify-content:flex-end;">
+                <div class="pill" id="modePill">mód: —</div>
+              </div>
+            </div>
+            <div class="panelBody formBody">
+              <div class="field">
+                <label for="tTitle">Cím</label>
+                <input id="tTitle" placeholder="Pl.: Árajánlat / Edzés / Hívás" />
+              </div>
+
+              <div class="togRow">
+                <button class="tog" id="togListMode" type="button" title="Kattintásra vált">
+                  <span class="k">terület</span><span class="v" id="togListModeV">💼 VÁLL.</span>
+                </button>
+                <button class="tog" id="togListPrio" type="button" title="Kattintásra vált">
+                  <span class="k">prio</span><span class="v" id="togListPrioV">P2</span>
+                </button>
+              </div>
+
+              <div class="row2">
+                <div class="field">
+                  <label for="tTime"><span class="miniGlyph" aria-hidden="true"><svg class="calSvg miniSvg" viewBox="0 0 24 24" aria-hidden="true">
+  <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <path d="M12 7.5v5l3.2 1.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>Idő</label>
+                  <input id="tTime" type="time" />
+                </div>
+                <div class="field">
+                  <label for="tDate"><span class="miniGlyph" aria-hidden="true"><svg class="calSvg miniSvg" viewBox="0 0 24 24" aria-hidden="true">
+  <rect x="4.5" y="6.5" width="15" height="13" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <path d="M8 4.8v3.2M16 4.8v3.2M4.5 9.2h15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+</svg></span>Dátum</label>
+                  <input id="tDate" type="date" />
+                </div>
+              </div>
+
+              <div class="row2" style="align-items:end; margin-top:12px;">
+                <button class="btn" id="btnSaveTask" style="padding:12px 14px;">Mentés</button>
+                <button class="btn" id="btnClearForm" style="padding:12px 14px;">Törlés</button>
+              </div>
+
+              <div class="smallNote" id="autoP1Note"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CALENDAR ADD (külön oldal) -->
+      <section class="view zoom-enter" id="view-caladd">
+        <div class="fullPage">
+          <div class="mobileTop">
+            <div class="topbar" style="padding:0; border:0; background:transparent;">
+              <div class="brand">
+                <div class="brandBadge">＋</div>
+                <div class="brandText">
+                  <div class="small">Zsolt adatbázisa</div>
+                  <div class="big">Naptár feladat</div>
+                </div>
+              </div>
+              <div class="actions" style="gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+                <button class="btn" id="btnCalAddBack">Vissza</button>
+                <button class="btn" id="btnCalAddToList">Lista</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="formPanel panel" style="flex:1 1 auto; min-height:0; overflow:hidden;">
+            <div class="panelHead">
+                <div class="cap">bevitel</div>
+            <div class="panelBody" style="padding:14px; flex:1 1 auto; min-height:0; overflow:hidden;">
+              
+                <div class="pillRow">
+                  <div class="pill">naptár adatbázis • localStorage</div>
+                  <div class="pill" id="selDatePill">dátum: —</div>
+                </div>
+
+                <div class="field">
+                  <label for="cTitle">Cím</label>
+                  <input id="cTitle" placeholder="Pl.: Találkozó / Bevásárlás / Munka blokk" />
+                </div>
+
+                
+                <div class="calPickCenter" aria-label="Dátum és idő">
+                  <label class="calIconBtn calIconLabel" aria-label="Idő kiválasztása">
+                    <span class="calIconGlyph" aria-hidden="true"><svg class="calSvg" viewBox="0 0 24 24" aria-hidden="true">
+  <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <path d="M12 7.5v5l3.2 1.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></span>
+                    <span class="calIconValue" id="cTimeVal"></span>
+                    <input id="cTime" type="time" class="calOverlayInput" />
+                  </label>
+
+                  <label class="calIconBtn calIconLabel" aria-label="Dátum kiválasztása">
+                    <span class="calIconGlyph" aria-hidden="true"><svg class="calSvg" viewBox="0 0 24 24" aria-hidden="true">
+  <rect x="4.5" y="6.5" width="15" height="13" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <path d="M8 4.8v3.2M16 4.8v3.2M4.5 9.2h15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+</svg></span>
+                    <span class="calIconValue" id="cDateVal">—</span>
+                    <input id="cDate" type="date" class="calOverlayInput" />
+                  </label>
+                </div>
+
+
+                <div class="togRow">
+                  <button class="tog" id="togCalMode" type="button" title="Kattintásra vált">
+                    <span class="k">lista</span><span class="v" id="togCalModeV">🌿 MAGÁN</span>
+                  </button>
+
+                  <button class="togMini" id="btnMultiToggle" type="button" title="Időszak felvétele">
+                    📆 Több nap
+                  </button>
+
+                  <div id="multiPanel" style="display:none; width:100%;">
+                    <div class="row2" style="margin-top:10px;">
+                      <div class="field">
+                        <label for="cFrom">-tól (dátum)</label>
+                        <input id="cFrom" type="date" />
+                      </div>
+                      <div class="field">
+                        <label for="cTo">-ig (dátum)</label>
+                        <input id="cTo" type="date" />
+                      </div>
+                    </div>
+                    <div class="smallNote">Több napos esemény → a naptárban felül folyamatos sáv lesz.</div>
+                  </div>
+                </div>
+
+                <div class="row2" style="align-items:end; margin-top:12px;">
+                  <button class="btn" id="btnCalAddTask" style="padding:12px 14px;">Mentés</button>
+                  <button class="btn" id="btnCalClear" style="padding:12px 14px;">Törlés</button>
+                </div>
+
+                <div class="paperLine"></div>
+                <div class="pill" style="margin-top:6px;">Kijelölt nap feladatai (idő szerint)</div>
+                <div id="calDayTasks" style="margin-top:10px;"></div>
+
+                <div class="smallNote" id="calSyncNote"></div>
+              </div>
+            
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- CALENDAR VIEW -->
+      <section class="view" id="view-calendar">
+        <div class="fullPage" style="padding-top: calc(12px + env(safe-area-inset-top));">
+          <div class="mobileTop">
+            <div class="topbar" style="padding:0; border:0; background:transparent;">
+              <div class="brand">
+                <div class="brandBadge">📅</div>
+                <div class="brandText">
+                  <div class="small">Zsolt adatbázisa</div>
+                  <div class="big" id="calTitle">Naptár</div>
+                </div>
+              </div>
+              <div class="actions" style="gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+                <div class="seg calSeg" id="calSeg">
+                  <button id="segCalWeek" class="active"><span>🗓️</span><span>Hét</span></button>
+                  <button id="segCalAdd"><span>＋</span><span>Feladat</span></button>
+                </div>
+                <button class="btn" id="btnCalAddTop">＋ Feladat</button>
+                <button class="btn" id="btnCalToList">Lista</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="listPanel panel" style="flex:1 1 auto; min-height:0; overflow:hidden;">
+            <div class="panelHead" style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px;">
+              <div>
+                <div class="cap">naptár</div>
+                <div class="h" id="calWeekLabel">Heti nézet</div>
+              </div>
+              <div class="actions" style="gap:8px;">
+                <button class="btn" id="btnPrevWeek">◀</button>
+                <button class="btn" id="btnTodayMonth">Ma</button>
+                <button class="btn" id="btnNextWeek">▶</button>
+              </div>
+            </div>
+            <div class="panelBody" style="flex:1 1 auto; min-height:0; overflow:hidden; padding: 0;">
+              <div class="weekStack" style="height:100%;">
+                <div class="rangeLayer" id="rangeLayer"></div>
+                <div class="weekWide" id="weekWide"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+    </div>
+  </div>
+
+  <script>
+    // -------------------------
+    // Views + state
+    // -------------------------
+    const views = {
+      splash: document.getElementById("view-splash"),
+      list: document.getElementById("view-list"),
+      add: document.getElementById("view-add"),
+      calendar: document.getElementById("view-calendar"),
+      caladd: document.getElementById("view-caladd"),
+    };
+    function show(name){
+      Object.values(views).forEach(v => v.classList.remove("active"));
+      views[name].classList.add("active");
+    }
+    let currentMode = "business";
+    show("splash");
+    // betöltő képernyő után indulunk a VÁLL. listával
+    setTimeout(()=>{
+      currentMode = "business";
+      try{ renderList(); }catch{}
+      show("list");
+    }, 1200);
+
+    function hideKeyboard(){
+      try{ if(document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur(); }catch{}
+      try{ window.scrollTo(0,0); }catch{}
+    }
+
+    // -------------------------
+    // Storage keys
+    // -------------------------
+    const LS_LIST_KEY = "zsolt_db_tasks_list_v7";
+    const LS_CAL_KEY  = "zsolt_db_tasks_calendar_v4";
+    const LS_DAY_KEY  = "zsolt_db_last_day_v7";
+
+    function setLastSelectedDay(ymd){
+      try{ localStorage.setItem(LS_DAY_KEY, ymd); }catch{}
+    }
+    function getLastSelectedDay(){
+      try{ return localStorage.getItem(LS_DAY_KEY) || ""; }catch{ return ""; }
+    }
+    // -------------------------
+    // File-backed storage (Electron) fallback to localStorage (browser)
+    // -------------------------
+    function _readStore(){
+      // Electron preload exposes window.zsoltFileStore.{readData,writeData}
+      if(window.zsoltFileStore && typeof window.zsoltFileStore.readData === "function"){
+        const s = window.zsoltFileStore.readData() || {};
+        return {
+          list: Array.isArray(s.list) ? s.list : [],
+          calendar: Array.isArray(s.calendar) ? s.calendar : [],
+          meta: (s.meta && typeof s.meta === "object") ? s.meta : {}
+        };
+      }
+      // Browser fallback (original localStorage keys)
+      let list = [];
+      let calendar = [];
+      let meta = {};
+      try{
+        const raw = localStorage.getItem(LS_LIST_KEY);
+        if(raw){
+          const x = JSON.parse(raw);
+          if(Array.isArray(x)) list = x;
+        }
+      }catch{}
+      try{
+        const raw = localStorage.getItem(LS_CAL_KEY);
+        if(raw){
+          const x = JSON.parse(raw);
+          if(Array.isArray(x)) calendar = x;
+        }
+      }catch{}
+      try{
+        const last = localStorage.getItem(LS_DAY_KEY);
+        if(last) meta.lastDay = last;
+      }catch{}
+      return { list, calendar, meta };
+    }
+
+    function _writeStore(store){
+      if(window.zsoltFileStore && typeof window.zsoltFileStore.writeData === "function"){
+        window.zsoltFileStore.writeData(store || {});
+        return;
+      }
+      // Browser fallback
+      try{ localStorage.setItem(LS_LIST_KEY, JSON.stringify((store && store.list) || [])); }catch{}
+      try{ localStorage.setItem(LS_CAL_KEY, JSON.stringify((store && store.calendar) || [])); }catch{}
+      try{
+        const ld = store && store.meta && store.meta.lastDay;
+        if(ld) localStorage.setItem(LS_DAY_KEY, String(ld));
+      }catch{}
+
+    }
+
+
+    // -------------------------
+    // Helpers
+    // -------------------------
+    function on(id, ev, fn){
+      const el = document.getElementById(id);
+      if(el && fn) el.addEventListener(ev, fn);
+      return el;
+    }
+    function uid(){
+      return Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+    }
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[m]));
+    }
+    function todayYMD(){
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,"0");
+      const day = String(d.getDate()).padStart(2,"0");
+      return `${y}-${m}-${day}`;
+    }
+    function isTodayDate(ymd){ return !!ymd && ymd === todayYMD(); }
+    function modeLabel(mode){ return mode === "business" ? "Vállalkozás" : "Magánélet"; }
+    function modeIcon(mode){ return mode === "business" ? "💼" : "🌿"; }
+
+    function priorityRank(p){
+      if(p === "P1") return 1;
+      if(p === "P2") return 2;
+      return 3;
+    }
+    function dueStamp(task){
+      const d = task.date || "9999-12-31";
+      const t = task.time && task.time.trim() ? task.time : "23:59";
+      return `${d}T${t}:00`;
+    }
+    function fmtDue(task){
+      const d = task.date ? task.date : "—";
+      const t = task.time && task.time.trim() ? task.time : "";
+      return t ? `${d} ${t}` : d;
+    }
+
+
+    // -------------------------
+    // Pagination (no scrolling)
+    // -------------------------
+    const UI_PAGES = { list: 0, cal: 0, day: 0, week: 0 };
+
+    function _isPhone(){
+      return !!(window.matchMedia && window.matchMedia("(max-width: 640px)").matches);
+    }
+    function _pageSize(kind){
+      if(_isPhone()) return (kind === "list") ? 6 : 5;
+      return 10;
+    }
+    function _clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
+    function _pagerHTML(page, totalPages){
+      if(totalPages <= 1) return "";
+      return `
+        <div class="paperLine" style="margin:12px 0;"></div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <button class="btn" data-pager="prev">◀</button>
+          <div class="pill">oldal: ${page+1} / ${totalPages}</div>
+          <button class="btn" data-pager="next">▶</button>
+        </div>
+      `;
+    }
+
+    function _wirePager(rootEl, kind, totalPages, rerenderFn){
+      if(totalPages <= 1) return;
+      const prev = rootEl.querySelector('[data-pager="prev"]');
+      const next = rootEl.querySelector('[data-pager="next"]');
+      if(prev) prev.addEventListener('click', () => {
+        UI_PAGES[kind] = _clamp(UI_PAGES[kind] - 1, 0, totalPages - 1);
+        rerenderFn();
+      });
+      if(next) next.addEventListener('click', () => {
+        UI_PAGES[kind] = _clamp(UI_PAGES[kind] + 1, 0, totalPages - 1);
+        rerenderFn();
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      UI_PAGES.list = 0; UI_PAGES.cal = 0; UI_PAGES.day = 0; UI_PAGES.week = 0; UI_PAGES.week = 0;
+      if(views.list.classList.contains('active')) renderList();
+      if(views.calendar.classList.contains('active')){
+        renderCalendarWeek();
+        renderSelectedDayTasks();
+      }
+    });
+
+    // Date helpers
+    function parseYMD(ymd){
+      const [y,m,d] = ymd.split("-").map(n=>parseInt(n,10));
+      return new Date(y, m-1, d);
+    }
+    function ymdOf(dateObj){
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth()+1).padStart(2,"0");
+      const d = String(dateObj.getDate()).padStart(2,"0");
+      return `${y}-${m}-${d}`;
+    }
+    function cmpYMD(a,b){ return a < b ? -1 : (a > b ? 1 : 0); }
+    function clampRange(from,to){
+      if(!from) return {from:null,to:null};
+      if(!to) return {from, to:from};
+      if(cmpYMD(from,to) <= 0) return {from,to};
+      return {from:to, to:from};
+    }
+
+    // -------------------------
+    // LIST DB
+    // -------------------------
+    function loadListTasks(){
+      const s = _readStore();
+      return Array.isArray(s.list) ? s.list : [];
+    }
+    function saveListTasks(tasks){
+      const s = _readStore();
+      s.list = Array.isArray(tasks) ? tasks : [];
+      _writeStore(s);
+    }
+    function purgeListDoneFromPreviousDays(){
+      const today = todayYMD();
+      const tasks = loadListTasks();
+      const kept = tasks.filter(t => !(t.done === true && t.doneAt && t.doneAt !== today));
+      if(kept.length !== tasks.length) saveListTasks(kept);
+      const s = _readStore();
+      s.meta = s.meta && typeof s.meta === "object" ? s.meta : {};
+      s.meta.lastDay = today;
+      _writeStore(s);
+      return kept;
+    }
+    function tickDayChange(){
+      const today = todayYMD();
+      const s = _readStore();
+      const last = s.meta && s.meta.lastDay ? s.meta.lastDay : null;
+
+      if(last && last !== today){
+        purgeListDoneFromPreviousDays();
+        syncCalendarTodayToList();
+        if(views.list.classList.contains("active")) renderList();
+      } else if(!last){
+        s.meta = s.meta && typeof s.meta === "object" ? s.meta : {};
+        s.meta.lastDay = today;
+        _writeStore(s);
+      }
+    }
+    purgeListDoneFromPreviousDays();
+    setInterval(tickDayChange, 45 * 1000);
+
+    // -------------------------
+    // CAL DB (single + range)
+    // -------------------------
+    function normalizeCalEvent(e){
+      if(!e || typeof e !== "object") return null;
+      const type = e.type || "single";
+      if(type === "range"){
+        if(!e.from || !e.to) return null;
+        const r = clampRange(e.from, e.to);
+        return {
+          id: e.id || uid(),
+          type: "range",
+          title: String(e.title||"").trim(),
+          from: r.from,
+          to: r.to,
+          time: String(e.time||"").trim(),
+          mode: e.mode || "personal",
+          createdAt: e.createdAt || Date.now()
+        };
+      }
+      if(!e.date) return null;
+      return {
+        id: e.id || uid(),
+        type: "single",
+        title: String(e.title||"").trim(),
+        date: e.date,
+        time: String(e.time||"").trim(),
+        mode: e.mode || "personal",
+        createdAt: e.createdAt || Date.now()
+      };
+    }
+
+    function loadCalEvents(){
+      try{
+        const s = _readStore();
+        const arr = Array.isArray(s.calendar) ? s.calendar : [];
+        const out = [];
+        for(const it of arr){
+          const n = normalizeCalEvent(it);
+          if(n && n.title) out.push(n);
+        }
+        return out;
+      }catch{ return []; }
+    }
+    function saveCalEvents(events){
+      const s = _readStore();
+      s.calendar = Array.isArray(events) ? events : [];
+      _writeStore(s);
+    }
+
+    function getCalSinglesForDate(ymd){
+      return loadCalEvents().filter(e => e.type === "single" && e.date === ymd);
+    }
+    function getCalRangesIntersecting(from,to){
+      const r = clampRange(from,to);
+      if(!r.from || !r.to) return [];
+      return loadCalEvents().filter(e => e.type === "range" && !(e.to < r.from || e.from > r.to));
+    }
+
+    function deleteCalEventById(id){
+      const all = loadCalEvents().filter(e => e.id !== id);
+      saveCalEvents(all);
+    }
+
+    // -------------------------
+    // Sync: calendar TODAY -> list (P1)
+    // -------------------------
+    function syncCalendarTodayToList(){
+      const today = todayYMD();
+      const allCal = loadCalEvents();
+
+      const todaysSingles = allCal.filter(e => e.type==="single" && e.date===today);
+      const todaysRanges  = allCal.filter(e => e.type==="range" && e.from <= today && e.to >= today);
+
+      const list = loadListTasks();
+      const existing = new Set(list.filter(x => x.source === "calendar" && x.calId).map(x => x.calId));
+
+      let changed = false;
+
+      function pushToListFromCal(e){
+        if(existing.has(e.id)) return;
+        list.push({
+          id: "calcopy-" + e.id,
+          calId: e.id,
+          source: "calendar",
+          title: e.title,
+          mode: e.mode || "personal",
+          priority: "P1",
+          date: today,
+          time: e.time || "",
+          note: "",
+          createdAt: Date.now(),
+          done: false,
+          doneAt: null
+        });
+        changed = true;
+      }
+
+      todaysSingles.forEach(pushToListFromCal);
+      todaysRanges.forEach(pushToListFromCal);
+
+      if(changed) saveListTasks(list);
+    }
+
+    // -------------------------
+    // Tunnel
+    // -------------------------
+    const tunnel = document.getElementById("tunnel");
+    function setTunnelOriginFromEl(el){
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width/2;
+      const cy = r.top + r.height/2;
+      const x = (cx / window.innerWidth) * 100;
+      const y = (cy / window.innerHeight) * 100;
+      tunnel.style.setProperty("--x", x.toFixed(2) + "%");
+      tunnel.style.setProperty("--y", y.toFixed(2) + "%");
+    }
+    function diveToAdd(originEl){
+      if(originEl) setTunnelOriginFromEl(originEl);
+      else { tunnel.style.setProperty("--x","50%"); tunnel.style.setProperty("--y","50%"); }
+      tunnel.classList.add("on");
+      setTimeout(() => {
+        tunnel.classList.remove("on");
+        openAddPage();
+      }, 360);
+    }
+
+    // -------------------------
+    // LIST ADD
+    // -------------------------
+    const tTitle = document.getElementById("tTitle");
+    const tDate = document.getElementById("tDate");
+    const tTime = document.getElementById("tTime");
+    const modePill = document.getElementById("modePill");
+    const autoP1Note = document.getElementById("autoP1Note");
+
+    let listAddMode = "personal";
+    let listAddPrio = "P2";
+
+    const togListMode = document.getElementById("togListMode");
+    const togListModeV = document.getElementById("togListModeV");
+    const togListPrio = document.getElementById("togListPrio");
+    const togListPrioV = document.getElementById("togListPrioV");
+
+    function renderListToggles(){
+      togListModeV.textContent = (listAddMode === "business" ? "💼 VÁLL" : "🌿 MAGÁN");
+      togListPrioV.textContent = listAddPrio;
+      modePill.textContent = "mód: " + modeLabel(listAddMode);
+    }
+    function cycleListMode(){ listAddMode = (listAddMode === "business") ? "personal" : "business"; renderListToggles(); }
+    function cycleListPrio(){ listAddPrio = (listAddPrio === "P1") ? "P2" : (listAddPrio === "P2" ? "P3" : "P1"); renderListToggles(); }
+    togListMode.addEventListener("click", cycleListMode);
+    togListPrio.addEventListener("click", cycleListPrio);
+
+    function updateAutoP1Hint(){
+      if(isTodayDate(tDate.value)){
+        autoP1Note.innerHTML = "⚡ Határidő <b>ma</b> → mentéskor a prioritás automatikusan <b>P1</b> lesz.";
+      } else autoP1Note.textContent = "";
+    }
+    tDate.addEventListener("change", updateAutoP1Hint);
+
+    function clearForm(){
+      tTitle.value = "";
+      tTime.value = "";
+      tDate.value = "";
+      listAddPrio = "P2";
+      listAddMode = currentMode;
+      updateAutoP1Hint();
+      renderListToggles();
+    }
+    function openAddPage(autofocus=true){
+      listAddMode = currentMode;
+      listAddPrio = "P2";
+      renderListToggles();
+      updateAutoP1Hint();
+      show("add");
+      if(autofocus){
+        try{ tTitle.focus({preventScroll:true}); }catch{ try{ tTitle.focus(); }catch{} }
+        // small fallback for browsers that need a tick
+        setTimeout(()=>{ try{ tTitle.focus({preventScroll:true}); }catch{ try{ tTitle.focus(); }catch{} } }, 0);
+      }
+    }
+
+    function openCalAddPage(autofocus=true){
+      show("caladd");
+            try{ cTitle.focus({preventScroll:true}); cTitle.setSelectionRange(cTitle.value.length, cTitle.value.length); }catch{}
+      try{ requestAnimationFrame(()=>{ try{ cTitle.focus({preventScroll:true}); }catch{}; }); }catch{}
+// alapérték: az utoljára kijelölt nap (megbízhatóbb), különben a jelenlegi, különben ma
+      const last = (getLastSelectedDay && getLastSelectedDay()) ? getLastSelectedDay() : "";
+      const base = (last && last.trim()) ? last : ((selectedDate && selectedDate.trim()) ? selectedDate : todayYMD());
+      selectedDate = base;
+      setLastSelectedDay(base);
+      try{ cDate.value = base; }catch{}
+            try{ cDate.dispatchEvent(new Event("input", {bubbles:true})); }catch{}
+// always start with NO time selected for new calendar task
+      try{ cTime.value = ""; }catch{}
+      try{ const _tv = document.getElementById("cTimeVal"); if(_tv) _tv.textContent = ""; }catch{}
+      try{ selDatePill.textContent = "dátum: " + prettyCalDate(base); }catch{}
+      try{ UI_PAGES.cal = 0; }catch{}
+      try{ renderSelectedDayTasks(); }catch{}
+
+      // fókusz: user-gesture-ből hívva azonnal fel tudja hozni a billentyűzetet
+      if(autofocus){
+        const ct = document.getElementById("cTitle");
+        try{ ct.focus({preventScroll:true}); }catch{ try{ ct.focus(); }catch{} }
+        setTimeout(()=>{ try{ ct.focus({preventScroll:true}); }catch{ try{ ct.focus(); }catch{} } }, 0);
+      }
+    }
+
+    function openCalendarPage(){
+      show("calendar");
+      renderCalendarWeek();
+    }
+
+    function closeKeyboard(){
+      const ae = document.activeElement;
+      if(ae && typeof ae.blur === "function") ae.blur();
+      // iOS-eken gyakran segít
+      window.scrollTo(0,0);
+    }
+
+    function addListTask(){
+      const title = (tTitle.value || "").trim();
+      if(!title){
+        tTitle.classList.add("danger");
+        setTimeout(()=> tTitle.classList.remove("danger"), 520);
+        tTitle.focus();
+        return;
+      }
+      let pr = listAddPrio;
+      if(isTodayDate(tDate.value)) pr = "P1";
+
+      const task = {
+        id: uid(),
+        source: "list",
+        title,
+        mode: listAddMode,
+        priority: pr,
+        date: (tDate.value || ""),
+        time: (tTime.value || ""),
+        note: "",
+        createdAt: Date.now(),
+        done: false,
+        doneAt: null
+      };
+
+      const tasks = loadListTasks();
+      tasks.push(task);
+      saveListTasks(tasks);
+
+      currentMode = task.mode;
+      hideKeyboard();
+      renderList();
+      show("list");
+      clearForm();
+    }
+
+    document.getElementById("btnSaveTask").addEventListener("click", addListTask);
+    document.getElementById("btnClearForm").addEventListener("click", clearForm);
+    tTitle.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addListTask(); } });
+    tTime.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addListTask(); } });
+
+    // -------------------------
+    // LIST VIEW
+    // -------------------------
+    const paperList = document.getElementById("paperList");
+    const listModeIcon = document.getElementById("listModeIcon");
+    const listModeLabel = document.getElementById("listModeLabel");
+    const countNote = document.getElementById("countNote");
+
+    const segBusiness = document.getElementById("segBusiness");
+    const segPersonal = document.getElementById("segPersonal");
+
+    function getTasksForMode(mode){
+      purgeListDoneFromPreviousDays();
+      syncCalendarTodayToList();
+      const tasks = loadListTasks();
+      return tasks.filter(t => t.mode === mode);
+    }
+    function sortListTasks(tasks){
+      return tasks.slice().sort((a,b) => {
+        const da = a.done ? 1 : 0;
+        const db = b.done ? 1 : 0;
+        if(da !== db) return da - db;
+        const ra = priorityRank(a.priority);
+        const rb = priorityRank(b.priority);
+        if(ra !== rb) return ra - rb;
+        const sa = dueStamp(a), sb = dueStamp(b);
+        if(sa < sb) return -1;
+        if(sa > sb) return 1;
+        return (a.createdAt||0) - (b.createdAt||0);
+      });
+    }
+    function setSegActive(){
+      segBusiness.classList.toggle("active", currentMode === "business");
+      segPersonal.classList.toggle("active", currentMode === "personal");
+    }
+
+    
+    function renderList(){
+      listModeIcon.textContent = modeIcon(currentMode);
+      listModeLabel.textContent = modeLabel(currentMode);
+      setSegActive();
+
+      const all = getTasksForMode(currentMode);
+      const tasks = sortListTasks(all);
+
+      const doneCount = tasks.filter(t => t.done).length;
+      const syncedCount = tasks.filter(t => t.source === "calendar").length;
+      countNote.innerHTML = `<b>${tasks.length}</b> feladat • kész: <b>${doneCount}</b> • naptárból: <b>${syncedCount}</b>`;
+
+      if(tasks.length === 0){
+        paperList.innerHTML = `
+          <div class="smallNote">
+            Még nincs feladat ebben a módban.<br/>
+            Nyomd meg a <b>＋ Feladat</b> gombot.
+          </div>
+        `;
+        return;
+      }
+
+      paperList.innerHTML = "";
+      tasks.forEach(task => {
+        const item = document.createElement("div");
+        item.className = "paperItem" + (task.done ? " done" : "");
+        item.setAttribute("data-id", task.id);
+
+        const due = fmtDue(task);
+        const ma = isTodayDate(task.date) ? `<span class="chip">MA</span>` : ``;
+        const doneChip = task.done ? `<span class="chip">KÉSZ</span>` : ``;
+        const srcChip = task.source === "calendar" ? `<span class="chip">📅</span>` : ``;
+
+        item.innerHTML = `
+          <div class="dot"></div>
+          <div class="paperText">
+            <div class="paperTitle">${escapeHtml(task.title)}</div>
+            <div class="paperMeta">
+              <span>[${escapeHtml(task.priority)}]</span>
+              <span>•</span>
+              <span>határidő: ${escapeHtml(due)}</span>
+              ${ma}${doneChip}${srcChip}
+            </div>
+          </div>
+          <button class="paperDel" data-del="${task.id}">Törlés</button>
+        `;
+        paperList.appendChild(item);
+      });
+
+      paperList.querySelectorAll("[data-del]").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute("data-del");
+          const remaining = loadListTasks().filter(t => t.id !== id);
+          saveListTasks(remaining);
+          renderList();
+        });
+      });
+
+      attachLongPressHandlers();
+    }
+
+
+    function toggleDone(taskId){
+      const today = todayYMD();
+      const tasks = loadListTasks();
+      const idx = tasks.findIndex(t => t.id === taskId);
+      if(idx < 0) return;
+      const t = tasks[idx];
+      t.done = !t.done;
+      t.doneAt = t.done ? today : null;
+      saveListTasks(tasks);
+      renderList();
+    }
+
+    function attachLongPressHandlers(){
+      const HOLD_MS = 550;
+      paperList.querySelectorAll(".paperItem").forEach(el => {
+        let timer = null;
+        const id = el.getAttribute("data-id");
+
+        const start = (e) => {
+          if(e?.target && e.target.closest && e.target.closest(".paperDel")) return;
+          el.classList.add("hold");
+          timer = setTimeout(() => {
+            el.classList.remove("hold");
+            toggleDone(id);
+          }, HOLD_MS);
+        };
+
+        const cancel = () => {
+          if(timer) clearTimeout(timer);
+          timer = null;
+          el.classList.remove("hold");
+        };
+
+        el.addEventListener("mousedown", start);
+        el.addEventListener("mouseup", cancel);
+        el.addEventListener("mouseleave", cancel);
+        el.addEventListener("mousemove", cancel);
+
+        el.addEventListener("touchstart", (e) => { start(e); }, { passive: true });
+        el.addEventListener("touchend", cancel, { passive: true });
+        el.addEventListener("touchcancel", cancel, { passive: true });
+      });
+    }
+
+    document.getElementById("btnClearAll").addEventListener("click", () => {
+      const ok = confirm("Biztos törlöd az összes feladatot ebben a módban?");
+      if(!ok) return;
+      const remaining = loadListTasks().filter(t => t.mode !== currentMode);
+      saveListTasks(remaining);
+      renderList();
+    });
+
+    function enterMode(mode){
+      currentMode = mode;
+      renderList();
+      show("list");
+    }
+
+    // -------------------------
+    // CALENDAR
+    // -------------------------
+    const weekWide = document.getElementById("weekWide");
+    const rangeLayer = document.getElementById("rangeLayer");
+    const calWeekLabel = document.getElementById("calWeekLabel");
+    const selDatePill = document.getElementById("selDatePill");
+    const calDayTasks = document.getElementById("calDayTasks");
+    const calSyncNote = document.getElementById("calSyncNote");
+
+    const cTitle = document.getElementById("cTitle");
+    const cTime = document.getElementById("cTime");
+    const cDate = document.getElementById("cDate");
+    const btnCalAddTask = document.getElementById("btnCalAddTask");
+    const btnCalClear = document.getElementById("btnCalClear");
+
+    let calWeekStart = mondayStart(new Date());
+    let selectedDate = todayYMD();
+
+    // Range mode inputs
+    let rangeOn = false;
+    const btnMultiToggle = document.getElementById("btnMultiToggle");
+    const multiPanel = document.getElementById("multiPanel");
+    const cFrom = document.getElementById("cFrom");
+    const cTo = document.getElementById("cTo");
+
+    // mode toggle
+    let calAddMode = "business";
+    const togCalMode = document.getElementById("togCalMode");
+    const togCalModeV = document.getElementById("togCalModeV");
+    function renderCalToggle(){ togCalModeV.textContent = (calAddMode === "business" ? "💼 VÁLL" : "🌿 MAGÁN"); }
+    function cycleCalMode(){ calAddMode = (calAddMode === "business") ? "personal" : "business"; renderCalToggle(); }
+    togCalMode.addEventListener("click", cycleCalMode);
+    renderCalToggle();
+
+    function formatHU(date, opts){ return date.toLocaleDateString("hu-HU", opts); }
+    function prettyCalDate(ymd){
+      const d = parseYMD(ymd);
+      return formatHU(d, { year:"numeric", month:"long", day:"2-digit", weekday:"long" });
+    }
+    function mondayStart(d){
+      const x = new Date(d);
+      const day = x.getDay();
+      const diff = (day === 0 ? -6 : 1) - day;
+      x.setDate(x.getDate() + diff);
+      x.setHours(0,0,0,0);
+      return x;
+    }
+
+    // Toggle range UI
+    btnMultiToggle.addEventListener("click", () => {
+      rangeOn = !rangeOn;
+      multiPanel.style.display = rangeOn ? "block" : "none";
+      btnMultiToggle.textContent = rangeOn ? "✅ Több nap" : "📆 Több nap";
+      if(rangeOn){
+        cFrom.value = selectedDate;
+        cTo.value = selectedDate;
+      }
+      renderCalendarWeek();
+    });
+
+    function sortSingles(tasks){
+      return tasks.slice().sort((a,b) => {
+        const ta = (a.time && a.time.trim()) ? a.time : "99:99";
+        const tb = (b.time && b.time.trim()) ? b.time : "99:99";
+        if(ta < tb) return -1;
+        if(ta > tb) return 1;
+        return (a.createdAt||0) - (b.createdAt||0);
+      });
+    }
+
+    function renderSelectedDayTasks(){
+      const singles = sortSingles(getCalSinglesForDate(selectedDate));
+      const ranges = getCalRangesIntersecting(selectedDate, selectedDate);
+
+      selDatePill.textContent = "dátum: " + prettyCalDate(selectedDate);
+      cDate.value = selectedDate;
+
+      if(isTodayDate(selectedDate)){
+        calSyncNote.innerHTML = "⚡ Ez <b>ma</b>. Mentés után automatikusan felkerül a kiválasztott listára is.";
+      } else {
+        calSyncNote.textContent = "Ez a nap csak a naptárban él. A listára csak a 'mai' kerül automatikusan.";
+      }
+
+      const items = [];
+      for(const r of ranges){
+        items.push({ kind:"range", id:r.id, title:r.title, when:(r.time && r.time.trim()) ? r.time : "—" });
+      }
+      for(const s of singles){
+        items.push({ kind:"single", id:s.id, title:s.title, when:(s.time && s.time.trim()) ? s.time : "—" });
+      }
+
+      if(items.length === 0){
+        dayTaskList.innerHTML = `<div class="smallNote">Nincs feladat ezen a napon.</div>`;
+      } else {
+        const ps = _pageSize('day');
+        const totalPages = Math.max(1, Math.ceil(items.length / ps));
+        UI_PAGES.day = _clamp(UI_PAGES.day, 0, totalPages - 1);
+        const start = UI_PAGES.day * ps;
+        const pageItems = items.slice(start, start + ps);
+
+        dayTaskList.innerHTML = "";
+        pageItems.forEach(it => {
+          const el = document.createElement("div");
+          el.className = "calTask";
+          const when = it.time && it.time.trim() ? it.time : "—";
+          el.innerHTML = `
+            <div class="t">${escapeHtml(it.title)}</div>
+            <div class="m"><span>idő: ${escapeHtml(when)}</span><span>•</span><span>${escapeHtml(it.kind==="range" ? "TÖBB NAP" : "EGY NAP")}</span></div>
+            <button class="del" data-del="${it.id}">TÖRLÉS</button>
+          `;
+          dayTaskList.appendChild(el);
+        });
+
+        dayTaskList.insertAdjacentHTML('beforeend', _pagerHTML(UI_PAGES.day, totalPages));
+        _wirePager(dayTaskList, 'day', totalPages, () => openDayView(dateYMD));
+
+        dayTaskList.querySelectorAll("[data-del]").forEach(btn=>{
+          btn.addEventListener("click", ()=>{
+            const id = btn.getAttribute("data-del");
+            deleteCalEventById(id);
+            renderCalendarWeek();
+            renderSelectedDayTasks();
+            openDayView(dateYMD);
+            syncCalendarTodayToList();
+          });
+        });
+      }
+
+      taskBlocks.innerHTML = "";
+      const hourHeight = 76;
+      const pxPerMin = hourHeight / 60;
+      const windowStartMin = DAY_START_H * 60;
+      const windowEndMin = (DAY_END_H+1) * 60;
+
+      const singlesTimed = singles.filter(t => timeToMinutes(t.time) != null);
+
+      singlesTimed.forEach(t => {
+        const mins = timeToMinutes(t.time);
+        let posMin = mins;
+
+        if(posMin < windowStartMin) posMin = windowStartMin;
+        if(posMin > windowEndMin) posMin = windowEndMin;
+
+        const relMin = posMin - windowStartMin;
+        const top = relMin * pxPerMin;
+
+        const block = document.createElement("div");
+        block.className = "blockTask";
+        block.style.top = top + "px";
+        block.style.height = "56px";
+
+        const when = t.time.trim();
+        block.innerHTML = `
+          <div class="t">${escapeHtml(t.title)}</div>
+          <div class="m">
+            <span>${escapeHtml(when)}</span>
+            <span>•</span>
+            <span>${escapeHtml(modeIcon(t.mode||"personal"))}</span>
+          </div>
+          <button class="del" data-del="${t.id}">TÖRLÉS</button>
+        `;
+        taskBlocks.appendChild(block);
+      });
+
+      taskBlocks.querySelectorAll("[data-del]").forEach(btn=>{
+        btn.addEventListener("click", (e)=>{
+          e.stopPropagation();
+          const id = btn.getAttribute("data-del");
+          deleteCalEventById(id);
+          renderCalendarWeek();
+          renderSelectedDayTasks();
+          openDayView(dateYMD);
+          syncCalendarTodayToList();
+        });
+      });
+
+      overlayDay.classList.add("on");
+    }
+
+    // -------------------------
+    // Month picker
+    // -------------------------
+    const overlayMonths = document.getElementById("overlayMonths");
+    const monthGrid = document.getElementById("monthGrid");
+    document.getElementById("btnMonthsClose").addEventListener("click", ()=> overlayMonths.classList.remove("on"));
+
+    function openMonthPicker(){
+      monthGrid.innerHTML = "";
+      const now = new Date();
+      const y = now.getFullYear();
+      const curM = now.getMonth();
+
+      const monthNames = Array.from({length:12}, (_,i)=> {
+        const d = new Date(y, i, 1);
+        return d.toLocaleDateString("hu-HU",{month:"long"});
+      });
+
+      const t0 = document.createElement("div");
+      t0.className = "monthTile current";
+      t0.innerHTML = `
+        <div class="m1">gyors</div>
+        <div class="m2">Ugrás mára</div>
+        <div class="m3">${todayYMD()}</div>
+      `;
+      t0.addEventListener("click", ()=>{
+        calWeekStart = mondayStart(new Date());
+        selectedDate = todayYMD();
+        renderCalendarWeek();
+        renderSelectedDayTasks();
+        overlayMonths.classList.remove("on");
+      });
+      monthGrid.appendChild(t0);
+
+      for(let i=0;i<12;i++){
+        const tile = document.createElement("div");
+        tile.className = "monthTile" + (i === curM ? " current" : "");
+        tile.innerHTML = `
+          <div class="m1">${y}</div>
+          <div class="m2">${monthNames[i]}</div>
+          <div class="m3">hónap</div>
+        `;
+        tile.addEventListener("click", ()=>{
+          const first = new Date(y, i, 1);
+          calWeekStart = mondayStart(first);
+          selectedDate = ymdOf(first);
+          renderCalendarWeek();
+          renderSelectedDayTasks();
+          overlayMonths.classList.remove("on");
+        });
+        monthGrid.appendChild(tile);
+      }
+      overlayMonths.classList.add("on");
+    }
+    document.getElementById("btnTodayMonth").addEventListener("click", openMonthPicker);
+
+    // -------------------------
+    // Calendar quick buttons
+    // -------------------------
+    const segCalWeek = document.getElementById('segCalWeek');
+    const segCalAdd  = document.getElementById('segCalAdd');
+    
+    const btnCalAddTop = document.getElementById('btnCalAddTop');
+    if(segCalWeek) segCalWeek.addEventListener('click', ()=> { hideKeyboard(); openCalendarPage(); });
+    if(segCalAdd)  segCalAdd.addEventListener('click', ()=> { hideKeyboard(); openCalAddPage(); });
+    if(btnCalAddTop) btnCalAddTop.addEventListener('click', ()=>{ hideKeyboard(); openCalAddPage(); });
+
+    // -------------------------
+    // Navigation
+    // -------------------------
+    // Direct open so the focus is still considered a user gesture (mobile keyboards will pop up)
+    document.getElementById("btnListAdd").addEventListener("click", (e)=> { hideKeyboard(); openAddPage(true); });
+    document.getElementById("btnListCalendar").addEventListener("click", (e)=> openCalendar(e.currentTarget));
+    document.getElementById("btnCalToList").addEventListener("click", ()=> { hideKeyboard(); renderList(); show("list"); });
+
+    document.getElementById("btnAddBack").addEventListener("click", ()=> { hideKeyboard(); renderList(); show("list"); });
+    document.getElementById("btnToCalendarFromAdd").addEventListener("click", (e)=> openCalendar(e.currentTarget));
+    document.getElementById("btnCalAddBack").addEventListener("click", ()=> { hideKeyboard(); openCalendarPage(); });
+    document.getElementById("btnCalAddToList").addEventListener("click", ()=> { hideKeyboard(); renderList(); show("list"); });
+
+    segBusiness.addEventListener("click", ()=> enterMode("business"));
+    segPersonal.addEventListener("click", ()=> enterMode("personal"));
+
+    // BOOT_RENDER_LIST_ON_READY
+    // Ha a splash után listára érkezünk, a feladatok akkor is renderelődjenek,
+    // ha a timeout nagyon korán futott volna (pl. régebbi mobil böngészők).
+    setTimeout(()=>{
+      try{ if(views.list.classList.contains('active')) renderList(); }catch{}
+    }, 0);
+
+    // Init
+    renderListToggles();
+    updateAutoP1Hint();
+    syncCalendarTodayToList();
+    renderCalendarWeek();
+    renderSelectedDayTasks();
+  
+
+    // =========================================================
+    // MOBILE_OVERRIDES_NO_SCROLL
+    // Redefine a few renderers so lists are pageable (no scrolling).
+    // =========================================================
+
+    
+    function renderList(){
+      listModeIcon.textContent = modeIcon(currentMode);
+      listModeLabel.textContent = modeLabel(currentMode);
+      setSegActive();
+
+      const all = getTasksForMode(currentMode);
+      const tasks = sortListTasks(all);
+
+      const doneCount = tasks.filter(t => t.done).length;
+      const syncedCount = tasks.filter(t => t.source === "calendar").length;
+      countNote.innerHTML = `<b>${tasks.length}</b> feladat • kész: <b>${doneCount}</b> • naptárból: <b>${syncedCount}</b>`;
+
+      if(tasks.length === 0){
+        paperList.innerHTML = `
+          <div class="smallNote">
+            Még nincs feladat ebben a módban.<br/>
+            Nyomd meg a <b>＋ Feladat</b> gombot.
+          </div>
+        `;
+        return;
+      }
+
+      paperList.innerHTML = "";
+      tasks.forEach(task => {
+        const item = document.createElement("div");
+        item.className = "paperItem" + (task.done ? " done" : "");
+        item.setAttribute("data-id", task.id);
+
+        const due = fmtDue(task);
+        const ma = isTodayDate(task.date) ? `<span class="chip">MA</span>` : ``;
+        const doneChip = task.done ? `<span class="chip">KÉSZ</span>` : ``;
+        const srcChip = task.source === "calendar" ? `<span class="chip">📅</span>` : ``;
+
+        item.innerHTML = `
+          <div class="dot"></div>
+          <div class="paperText">
+            <div class="paperTitle">${escapeHtml(task.title)}</div>
+            <div class="paperMeta">
+              <span>[${escapeHtml(task.priority)}]</span>
+              <span>•</span>
+              <span>határidő: ${escapeHtml(due)}</span>
+              ${ma}${doneChip}${srcChip}
+            </div>
+          </div>
+          <button class="paperDel" data-del="${task.id}">Törlés</button>
+        `;
+        paperList.appendChild(item);
+      });
+
+      paperList.querySelectorAll("[data-del]").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute("data-del");
+          const remaining = loadListTasks().filter(t => t.id !== id);
+          saveListTasks(remaining);
+          renderList();
+        });
+      });
+
+      attachLongPressHandlers();
+    }
+
+
+    function renderSelectedDayTasks(){
+      const singles = sortSingles(getCalSinglesForDate(selectedDate));
+      const ranges = getCalRangesIntersecting(selectedDate, selectedDate);
+
+      selDatePill.textContent = "dátum: " + prettyCalDate(selectedDate);
+      cDate.value = selectedDate;
+
+      if(isTodayDate(selectedDate)){
+        calSyncNote.innerHTML = "⚡ Ez <b>ma</b>. Mentés után automatikusan felkerül a kiválasztott listára is.";
+      } else {
+        calSyncNote.textContent = "Ez a nap csak a naptárban él. A listára csak a 'mai' kerül automatikusan.";
+      }
+
+      const items = [];
+      for(const r of ranges){
+        items.push({ kind:"range", id:r.id, title:r.title, when:(r.time && r.time.trim()) ? r.time : "—" });
+      }
+      for(const s of singles){
+        items.push({ kind:"single", id:s.id, title:s.title, when:(s.time && s.time.trim()) ? s.time : "—" });
+      }
+
+      if(items.length === 0){
+        calDayTasks.innerHTML = `<div class="smallNote">Nincs feladat erre a napra.</div>`;
+        return;
+      }
+
+      const size = _pageSize('cal');
+      const totalPages = Math.max(1, Math.ceil(items.length / size));
+      UI_PAGES.cal = _clamp(UI_PAGES.cal, 0, totalPages - 1);
+      const start = UI_PAGES.cal * size;
+      const pageItems = items.slice(start, start + size);
+
+      calDayTasks.innerHTML = "";
+      for(const it of pageItems){
+        const el = document.createElement("div");
+        el.className = "calTask";
+        el.innerHTML = `
+          <div class="t">${escapeHtml(it.title)}</div>
+          <div class="m">
+            <span class="chipMeta time">${escapeHtml(it.when)}</span>
+            <span class="chipMeta">${escapeHtml(it.kind === "range" ? "TÖBB NAP" : "EGY NAP")}</span>
+          </div>
+          <button class="del" data-del="${it.id}">TÖRLÉS</button>
+        `;
+        calDayTasks.appendChild(el);
+      }
+
+      calDayTasks.insertAdjacentHTML('beforeend', _pagerHTML(UI_PAGES.cal, totalPages));
+
+      calDayTasks.querySelectorAll("[data-del]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-del");
+          deleteCalEventById(id);
+          renderCalendarWeek();
+          // clamp & rerender
+          UI_PAGES.cal = 0;
+          renderSelectedDayTasks();
+          syncCalendarTodayToList();
+        });
+      });
+
+      _wirePager(calDayTasks, 'cal', totalPages, renderSelectedDayTasks);
+    }
+
+
+
+    // --- RANGE BARS + WEEK GRID ---
+    function buildWeekDays(){
+      const days = [];
+      for(let i=0;i<7;i++){
+        const d = new Date(calWeekStart);
+        d.setDate(calWeekStart.getDate() + i);
+        days.push(ymdOf(d));
+      }
+      return days;
+    }
+
+    function assignLanes(segments){
+      const lanes = [];
+      const placed = [];
+      const sorted = segments.slice().sort((a,b)=> a.startCol - b.startCol || a.endCol - b.endCol);
+      for(const seg of sorted){
+        let laneIndex = -1;
+        for(let i=0;i<lanes.length;i++){
+          if(seg.startCol > lanes[i]) { laneIndex = i; break; }
+        }
+        if(laneIndex === -1){
+          laneIndex = lanes.length;
+          lanes.push(-1);
+        }
+        lanes[laneIndex] = Math.max(lanes[laneIndex], seg.endCol);
+        placed.push({ ...seg, lane: laneIndex });
+      }
+      return { placed, laneCount: lanes.length };
+    }
+
+    function renderRangeBarsForWeek(weekFrom, weekTo){
+      rangeLayer.innerHTML = "";
+      if(_isPhone()) { rangeLayer.style.display = "none"; return; }
+
+      const ranges = getCalRangesIntersecting(weekFrom, weekTo);
+      if(ranges.length === 0){
+        rangeLayer.style.display = "none";
+        return;
+      }
+      rangeLayer.style.display = "grid";
+
+      const days = buildWeekDays();
+      const idxOf = new Map(days.map((d,i)=>[d,i]));
+
+      const segments = [];
+      for(const ev of ranges){
+        const from = (ev.from < weekFrom) ? weekFrom : ev.from;
+        const to   = (ev.to > weekTo) ? weekTo : ev.to;
+        const startCol = idxOf.get(from);
+        const endCol = idxOf.get(to);
+        if(startCol == null || endCol == null) continue;
+        segments.push({ startCol, endCol, ev });
+      }
+
+      const { placed } = assignLanes(segments);
+      rangeLayer.style.gridAutoRows = "42px";
+
+      for(const seg of placed){
+        const bar = document.createElement("div");
+        bar.className = "rangeBar";
+        bar.style.gridColumn = (seg.startCol+1) + " / " + (seg.endCol+2);
+        bar.style.gridRow = (seg.lane+1) + " / " + (seg.lane+2);
+
+        const when = seg.ev.time && seg.ev.time.trim() ? seg.ev.time : "";
+        const meta = `${modeIcon(seg.ev.mode||"personal")} ${seg.ev.from}–${seg.ev.to}`;
+
+        bar.innerHTML = `
+          <div class="t">${escapeHtml(seg.ev.title)}</div>
+          <div class="m">${escapeHtml(meta)}${when ? (" • " + escapeHtml(when)) : ""}</div>
+        `;
+        rangeLayer.appendChild(bar);
+      }
+    }
+
+    function renderCalendarWeek(){
+      weekWide.innerHTML = "";
+      rangeLayer.innerHTML = "";
+
+      const weekDays = buildWeekDays();
+      const weekFrom = weekDays[0];
+      const weekTo = weekDays[6];
+
+      const weekLabelStart = parseYMD(weekFrom);
+      const weekLabelEnd = parseYMD(weekTo);
+      calWeekLabel.textContent = `${formatHU(weekLabelStart,{month:"long", day:"2-digit"})} — ${formatHU(weekLabelEnd,{month:"long", day:"2-digit"})}`;
+
+      renderRangeBarsForWeek(weekFrom, weekTo);
+      // 7 napot mindig egyszerre kezelünk; a hétváltás a ◀/▶ gombokkal történik
+      const renderDays = weekDays;
+
+      for(const ymd of renderDays){
+        const isToday = ymd === todayYMD();
+        const isSel = ymd === selectedDate;
+
+        const day = document.createElement("div");
+        day.className = "dayWide" + (isToday ? " today" : "") + (isSel ? " sel" : "");
+        day.setAttribute("data-ymd", ymd);
+
+        const d = parseYMD(ymd);
+
+        const head = document.createElement("div");
+        head.className = "dayWideTop";
+        head.innerHTML = `
+          <div class="w">${formatHU(d,{weekday:"short"})}</div>
+          <div class="d">${formatHU(d,{month:"2-digit", day:"2-digit"})}</div>
+        `;
+        day.appendChild(head);
+        const taskWrap = document.createElement("div");
+        taskWrap.className = "dayTasksWrap";
+        day.appendChild(taskWrap);
+
+        const singlesAll = sortSingles(getCalSinglesForDate(ymd));
+        const rangesAll = getCalRangesIntersecting(ymd, ymd);
+        const total = singlesAll.length + rangesAll.length;
+
+        // Desktopon mutatjuk a feladatokat a kártyán, telefonon rejtve van CSS-ből
+        rangesAll.forEach(r => {
+          const block = document.createElement("div");
+          block.className = "calTask";
+          const when = (r.time && r.time.trim()) ? r.time : "—";
+          block.innerHTML = `
+            <div class="m">${escapeHtml(when)}</div>
+            <div class="t">↔ ${escapeHtml(r.title)}</div>
+          `;
+          taskWrap.appendChild(block);
+        });
+        singlesAll.forEach(t => {
+          const block = document.createElement("div");
+          block.className = "calTask";
+          const when = (t.time && t.time.trim()) ? t.time : "—";
+          block.innerHTML = `
+            <div class="m">${escapeHtml(when)}</div>
+            <div class="t">${escapeHtml(t.title)}</div>
+          `;
+          taskWrap.appendChild(block);
+        });
+
+        const pill = document.createElement("div");
+        pill.className = "miniPill";
+        pill.textContent = total ? `${total} db` : `üres`;
+        day.appendChild(pill);
+
+        day.addEventListener("click", () => {
+          selectedDate = ymd;
+          setLastSelectedDay(ymd);
+          UI_PAGES.cal = 0;
+          renderCalendarWeek();
+          renderSelectedDayTasks();
+          if(_isPhone()) openCalAddPage(false);
+          setTimeout(()=> cTitle.focus(), 120);
+        });
+
+        // Telefonon hosszú nyomás → napi nézet
+        let lpTimer = null;
+        day.addEventListener("touchstart", () => { lpTimer = setTimeout(()=> openDayView(ymd), 480); }, { passive:true });
+        day.addEventListener("touchend", () => { if(lpTimer) clearTimeout(lpTimer); lpTimer=null; }, { passive:true });
+        day.addEventListener("touchcancel", () => { if(lpTimer) clearTimeout(lpTimer); lpTimer=null; }, { passive:true });
+
+        weekWide.appendChild(day);
+      }
+    }
+
+    function openCalendar(){
+      selectedDate = todayYMD();
+      calWeekStart = mondayStart(new Date());
+      rangeOn = false;
+      multiPanel.style.display = "none";
+      btnMultiToggle.textContent = "📆 Több nap";
+      cDate.value = selectedDate;
+      UI_PAGES.week = 0;
+      UI_PAGES.cal = 0;
+      renderCalendarWeek();
+      renderSelectedDayTasks();
+      show("calendar");
+      setCalTab(_isPhone() ? 'week' : 'week');
+      setTimeout(()=> cTitle.focus(), 150);
+    }
+
+
+
+    function clearCalForm(){
+      cTitle.value = "";
+      cTime.value = "";
+      try{ const _tv = document.getElementById("cTimeVal"); if(_tv) _tv.textContent = ""; }catch{}
+      cDate.value = selectedDate;
+      if(rangeOn){
+        cFrom.value = selectedDate;
+        cTo.value = selectedDate;
+      }
+      cTitle.focus();
+    }
+    btnCalClear.addEventListener("click", clearCalForm);
+
+    function addCalendarEvent(){
+      const title = (cTitle.value || "").trim();
+      if(!title){
+        cTitle.classList.add("danger");
+        setTimeout(()=> cTitle.classList.remove("danger"), 520);
+        cTitle.focus();
+        return;
+      }
+
+      const all = loadCalEvents();
+      const now = Date.now();
+
+      if(rangeOn){
+        const rr = clampRange((cFrom.value||"").trim(), (cTo.value||"").trim());
+        if(!rr.from){
+          cFrom.classList.add("danger");
+          setTimeout(()=> cFrom.classList.remove("danger"), 520);
+          cFrom.focus();
+          return;
+        }
+
+        all.push({
+          id: uid(),
+          type: "range",
+          title,
+          from: rr.from,
+          to: rr.to,
+          time: (cTime.value || "").trim(),
+          mode: calAddMode,
+          createdAt: now
+        });
+
+        selectedDate = rr.from;
+        calWeekStart = mondayStart(parseYMD(rr.from));
+      } else {
+        const date = (cDate.value || selectedDate || "").trim();
+        if(!date){
+          cDate.classList.add("danger");
+          setTimeout(()=> cDate.classList.remove("danger"), 520);
+          cDate.focus();
+          return;
+        }
+
+        all.push({
+          id: uid(),
+          type: "single",
+          title,
+          date,
+          time: (cTime.value || "").trim(),
+          mode: calAddMode,
+          createdAt: now
+        });
+        selectedDate = date;
+      }
+
+      saveCalEvents(all);
+
+      UI_PAGES.cal = 0;
+      renderCalendarWeek();
+      renderSelectedDayTasks();
+      syncCalendarTodayToList();
+
+      cTitle.value = "";
+      cTime.value = "";
+      try{ const _tv = document.getElementById("cTimeVal"); if(_tv) _tv.textContent = ""; }catch{}
+      cTitle.focus();
+
+      // FIX: Mentés után ugorjon vissza a Naptár oldalra
+      hideKeyboard();
+      show("calendar");
+      setCalTab(_isPhone() ? "week" : "week");
+
+    }
+
+    btnCalAddTask.addEventListener("click", addCalendarEvent);
+    cTitle.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addCalendarEvent(); } });
+    cTime.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addCalendarEvent(); } });
+
+    cDate.addEventListener("change", () => {
+      if(cDate.value){
+        selectedDate = cDate.value;
+        setLastSelectedDay(selectedDate);
+        UI_PAGES.cal = 0;
+        renderCalendarWeek();
+        renderSelectedDayTasks();
+      }
+    });
+
+    document.getElementById("btnPrevWeek").addEventListener("click", () => {
+      calWeekStart.setDate(calWeekStart.getDate() - 7);
+      UI_PAGES.week = 0;
+      renderCalendarWeek();
+    });
+    document.getElementById("btnNextWeek").addEventListener("click", () => {
+      calWeekStart.setDate(calWeekStart.getDate() + 7);
+      UI_PAGES.week = 0;
+      renderCalendarWeek();
+    });
+
+    function openDayView(dateYMD){
+      setLastSelectedDay(dateYMD);
+      ensureTimelineHours();
+      const dt = new Date(dateYMD + "T00:00:00");
+      dayViewTitle.textContent = formatHU(dt, { year:"numeric", month:"long", day:"2-digit", weekday:"long" });
+      dayViewMeta.textContent = dateYMD + (isTodayDate(dateYMD) ? " • MA" : "");
+
+      const singles = sortSingles(getCalSinglesForDate(dateYMD));
+      const ranges = getCalRangesIntersecting(dateYMD, dateYMD);
+
+      const items = [];
+      ranges.forEach(r => items.push({kind:"range", id:r.id, title:r.title, time:r.time||""}));
+      singles.forEach(s => items.push({kind:"single", id:s.id, title:s.title, time:s.time||""}));
+
+      if(items.length === 0){
+        dayTaskList.innerHTML = `<div class="smallNote">Nincs feladat ezen a napon.</div>`;
+      } else {
+        const size = _pageSize('cal');
+        const totalPages = Math.max(1, Math.ceil(items.length / size));
+        UI_PAGES.day = _clamp(UI_PAGES.day, 0, totalPages - 1);
+        const start = UI_PAGES.day * size;
+        const pageItems = items.slice(start, start + size);
+
+        dayTaskList.innerHTML = "";
+        pageItems.forEach(it => {
+          const el = document.createElement("div");
+          el.className = "calTask";
+          const when = it.time && it.time.trim() ? it.time : "—";
+          el.innerHTML = `
+            <div class="t">${escapeHtml(it.title)}</div>
+            <div class="m"><span>idő: ${escapeHtml(when)}</span><span>•</span><span>${escapeHtml(it.kind==="range" ? "TÖBB NAP" : "EGY NAP")}</span></div>
+            <button class="del" data-del="${it.id}">TÖRLÉS</button>
+          `;
+          dayTaskList.appendChild(el);
+        });
+
+        dayTaskList.insertAdjacentHTML('beforeend', _pagerHTML(UI_PAGES.day, totalPages));
+
+        dayTaskList.querySelectorAll("[data-del]").forEach(btn=>{
+          btn.addEventListener("click", ()=>{
+            const id = btn.getAttribute("data-del");
+            deleteCalEventById(id);
+            renderCalendarWeek();
+            renderSelectedDayTasks();
+            UI_PAGES.day = 0;
+            openDayView(dateYMD);
+            syncCalendarTodayToList();
+          });
+        });
+
+        _wirePager(dayTaskList, 'day', totalPages, () => openDayView(dateYMD));
+      }
+
+      // timeline blocks (unchanged)
+      taskBlocks.innerHTML = "";
+      const hourHeight = _isPhone() ? 40 : 76;
+      const pxPerMin = hourHeight / 60;
+      const windowStartMin = DAY_START_H * 60;
+      const windowEndMin = (DAY_END_H+1) * 60;
+
+      const singlesTimed = singles.filter(t => timeToMinutes(t.time) != null);
+
+      singlesTimed.forEach(t => {
+        const mins = timeToMinutes(t.time);
+        let posMin = mins;
+
+        if(posMin < windowStartMin) posMin = windowStartMin;
+        if(posMin > windowEndMin) posMin = windowEndMin;
+
+        const relMin = posMin - windowStartMin;
+        const top = relMin * pxPerMin;
+
+        const block = document.createElement("div");
+        block.className = "blockTask";
+        block.style.top = top + "px";
+        block.style.height = _isPhone() ? "44px" : "56px";
+
+        const when = t.time.trim();
+        block.innerHTML = `
+          <div class="t">${escapeHtml(t.title)}</div>
+          <div class="m">
+            <span>${escapeHtml(when)}</span>
+            <span>•</span>
+            <span>${escapeHtml(modeIcon(t.mode||"personal"))}</span>
+          </div>
+          <button class="del" data-del="${t.id}">TÖRLÉS</button>
+        `;
+
+        block.querySelector("[data-del]").addEventListener("click", () => {
+          deleteCalEventById(t.id);
+          renderCalendarWeek();
+          renderSelectedDayTasks();
+          UI_PAGES.day = 0;
+          openDayView(dateYMD);
+          syncCalendarTodayToList();
+        });
+
+        taskBlocks.appendChild(block);
+      });
+
+      overlayDay.classList.add("on");
+      // Ensure the layout matches hourHeight on phone: rebuild once more
+      if(_isPhone()) ensureTimelineHours();
+    }
+
+
+/* === Calendar add-task: date/time icon pickers logic === */
+(function(){
+  const cTime = document.getElementById("cTime");
+  const cDate = document.getElementById("cDate");
+  const cTimeVal = document.getElementById("cTimeVal");
+  const cDateVal = document.getElementById("cDateVal");
+
+  function clampToWholeHour(t){
+    if(!t || typeof t !== "string") return "";
+    const hh = (t.split(":")[0] || "").padStart(2,"0");
+    return hh + ":00";
+  }
+  function nowWholeHour(){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,"0");
+    return hh + ":00";
+  }
+  function parseYMD(s){
+    // "YYYY-MM-DD"
+    const [y,m,d] = (s||"").split("-").map(Number);
+    if(!y || !m || !d) return null;
+    return new Date(y, m-1, d);
+  }
+  function formatHUDate(d){
+    try{
+      return new Intl.DateTimeFormat("hu-HU", { year:"numeric", month:"long", day:"2-digit", weekday:"long" }).format(d);
+    }catch{
+      return d.toISOString().slice(0,10);
+    }
+  }
+  function syncLabels(){
+    if(cTimeVal) cTimeVal.textContent = (cTime && cTime.value) ? cTime.value : "";
+    if(cDateVal){
+      if(cDate && cDate.value){
+        const d = parseYMD(cDate.value);
+        cDateVal.textContent = d ? formatHUDate(d) : cDate.value;
+      }else{
+        cDateVal.textContent = "—";
+      }
+    }
+  }
+
+  if(cTime){
+    // Only show/set time if the user actually chooses one.
+    // Enforce whole hour on any change.
+    cTime.addEventListener("input", ()=>{
+      if(!cTime.value){ syncLabels(); return; }
+      const clamped = clampToWholeHour(cTime.value);
+      if(clamped && clamped !== cTime.value) cTime.value = clamped;
+      syncLabels();
+    });
+    cTime.addEventListener("change", ()=>{
+      if(!cTime.value){ syncLabels(); return; }
+      const clamped = clampToWholeHour(cTime.value);
+      if(clamped && clamped !== cTime.value) cTime.value = clamped;
+      syncLabels();
+    });
+  }
+
+  if(cDate){
+    cDate.addEventListener("input", syncLabels);
+    cDate.addEventListener("change", syncLabels);
+  }
+
+  // Initial paint
+  syncLabels();
+})();
+ /* === End calendar add-task pickers logic === */
+
+</script>
+</body>
+</html>
