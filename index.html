@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
   <title>Zsolt adatbázisa</title>
   <meta name="theme-color" content="#050608"/>
   <style>
@@ -19,6 +19,15 @@
       --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
     *{ box-sizing:border-box; }
+    /* App-feel: disable page zoom/select (best-effort) */
+    html,body{ touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+    body{ -webkit-tap-highlight-color: transparent; }
+    body, .stage, .view, .panel, .topbar, .paperItem, .card{
+      -webkit-user-select: none; user-select: none;
+      -webkit-touch-callout: none;
+    }
+    input, textarea{ -webkit-user-select: text; user-select: text; }
+
     html,body{ height:100%; background: var(--bg0); overscroll-behavior: none; }
     body{
       margin:0;
@@ -1221,22 +1230,7 @@
 /* === End calendar add-task pickers === */
 
 
-/* === PATCH: soften date/time icons on add-task screen === */
-.addTaskIcon{
-  background: rgba(255,255,255,0.04) !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
-  color: rgba(255,255,255,0.65) !important;
-  backdrop-filter: blur(6px);
-}
-.addTaskIcon:hover,
-.addTaskIcon:active{
-  background: rgba(255,255,255,0.06) !important;
-  border-color: rgba(255,255,255,0.12) !important;
-}
-/* === END PATCH === */
-
-
-/* === PATCH: make add-task date/time icons darker === */
+/* === PATCH: add-task date/time icons (final) === */
 .addTaskIcon{
   background: rgba(0,0,0,0.28) !important;
   border: 1px solid rgba(255,255,255,0.06) !important;
@@ -1349,8 +1343,8 @@
 
             <div class="actions mobileActions">
               <div class="seg" title="Gyors váltás">
-                <button id="segBusiness"><span>💼</span><span>Váll.</span></button>
-                <button id="segPersonal"><span>🌿</span><span>Magán</span></button>
+                <button id="segBusiness" aria-label="Vállalkozás mód" title="Vállalkozás mód"><span>💼</span><span>Váll.</span></button>
+                <button id="segPersonal" aria-label="Magánélet mód" title="Magánélet mód"><span>🌿</span><span>Magán</span></button>
               </div>
 
               <button class="btn" id="btnListAdd">＋ Feladat</button>
@@ -1416,21 +1410,24 @@
                 </button>
               </div>
 
-              <div class="row2">
-                <div class="field">
-                  <label for="tTime"><span class="miniGlyph" aria-hidden="true"><svg class="calSvg miniSvg" viewBox="0 0 24 24" aria-hidden="true">
+              <div class="calPickCenter" aria-label="Dátum és idő">
+                <label class="calIconBtn calIconLabel" aria-label="Idő kiválasztása">
+                  <span class="calIconGlyph" aria-hidden="true"><svg class="calSvg" viewBox="0 0 24 24" aria-hidden="true">
   <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
   <path d="M12 7.5v5l3.2 1.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-</svg></span>Idő</label>
-                  <input id="tTime" type="time" />
-                </div>
-                <div class="field">
-                  <label for="tDate"><span class="miniGlyph" aria-hidden="true"><svg class="calSvg miniSvg" viewBox="0 0 24 24" aria-hidden="true">
+</svg></span>
+                  <span class="calIconValue" id="tTimeVal"></span>
+                  <input id="tTime" type="time" class="calOverlayInput" />
+                </label>
+
+                <label class="calIconBtn calIconLabel" aria-label="Dátum kiválasztása">
+                  <span class="calIconGlyph" aria-hidden="true"><svg class="calSvg" viewBox="0 0 24 24" aria-hidden="true">
   <rect x="4.5" y="6.5" width="15" height="13" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
   <path d="M8 4.8v3.2M16 4.8v3.2M4.5 9.2h15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-</svg></span>Dátum</label>
-                  <input id="tDate" type="date" />
-                </div>
+</svg></span>
+                  <span class="calIconValue" id="tDateVal">—</span>
+                  <input id="tDate" type="date" class="calOverlayInput" />
+                </label>
               </div>
 
               <div class="row2" style="align-items:end; margin-top:12px;">
@@ -2137,9 +2134,7 @@
       segBusiness.classList.toggle("active", currentMode === "business");
       segPersonal.classList.toggle("active", currentMode === "personal");
     }
-
-    
-    function renderList(){
+    function renderListBase(){
       listModeIcon.textContent = modeIcon(currentMode);
       listModeLabel.textContent = modeLabel(currentMode);
       setSegActive();
@@ -2183,7 +2178,7 @@
               ${ma}${doneChip}${srcChip}
             </div>
           </div>
-          <button class="paperDel" data-del="${task.id}">Törlés</button>
+          <button class=\"paperDel\" data-del=\"${task.id}\" aria-label=\"Törlés\" title=\"Törlés\">Törlés</button>
         `;
         paperList.appendChild(item);
       });
@@ -2200,6 +2195,12 @@
 
       attachLongPressHandlers();
     }
+
+    // Wrapper kept for compatibility
+    function renderList(){
+      return renderListBase();
+    }
+
 
 
     function toggleDone(taskId){
@@ -2542,69 +2543,7 @@
     // MOBILE_OVERRIDES_NO_SCROLL
     // Redefine a few renderers so lists are pageable (no scrolling).
     // =========================================================
-
-    
-    function renderList(){
-      listModeIcon.textContent = modeIcon(currentMode);
-      listModeLabel.textContent = modeLabel(currentMode);
-      setSegActive();
-
-      const all = getTasksForMode(currentMode);
-      const tasks = sortListTasks(all);
-
-      const doneCount = tasks.filter(t => t.done).length;
-      const syncedCount = tasks.filter(t => t.source === "calendar").length;
-      countNote.innerHTML = `<b>${tasks.length}</b> feladat • kész: <b>${doneCount}</b> • naptárból: <b>${syncedCount}</b>`;
-
-      if(tasks.length === 0){
-        paperList.innerHTML = `
-          <div class="smallNote">
-            Még nincs feladat ebben a módban.<br/>
-            Nyomd meg a <b>＋ Feladat</b> gombot.
-          </div>
-        `;
-        return;
-      }
-
-      paperList.innerHTML = "";
-      tasks.forEach(task => {
-        const item = document.createElement("div");
-        item.className = "paperItem" + (task.done ? " done" : "");
-        item.setAttribute("data-id", task.id);
-
-        const due = fmtDue(task);
-        const ma = isTodayDate(task.date) ? `<span class="chip">MA</span>` : ``;
-        const doneChip = task.done ? `<span class="chip">KÉSZ</span>` : ``;
-        const srcChip = task.source === "calendar" ? `<span class="chip">📅</span>` : ``;
-
-        item.innerHTML = `
-          <div class="dot"></div>
-          <div class="paperText">
-            <div class="paperTitle">${escapeHtml(task.title)}</div>
-            <div class="paperMeta">
-              <span>[${escapeHtml(task.priority)}]</span>
-              <span>•</span>
-              <span>határidő: ${escapeHtml(due)}</span>
-              ${ma}${doneChip}${srcChip}
-            </div>
-          </div>
-          <button class="paperDel" data-del="${task.id}">Törlés</button>
-        `;
-        paperList.appendChild(item);
-      });
-
-      paperList.querySelectorAll("[data-del]").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const id = btn.getAttribute("data-del");
-          const remaining = loadListTasks().filter(t => t.id !== id);
-          saveListTasks(remaining);
-          renderList();
-        });
-      });
-
-      attachLongPressHandlers();
-    }
+    // (Telefonon is ugyanazt a list renderelőt használjuk; a külön re-definiálás megszűnt.)
 
 
     function renderSelectedDayTasks(){
@@ -3139,6 +3078,76 @@
   syncLabels();
 })();
  /* === End calendar add-task pickers logic === */
+
+/* === List add-task: date/time icon pickers logic (match calendar add) === */
+(function(){
+  const tTime = document.getElementById("tTime");
+  const tDate = document.getElementById("tDate");
+  const tTimeVal = document.getElementById("tTimeVal");
+  const tDateVal = document.getElementById("tDateVal");
+
+  function clampToWholeHour(t){
+    if(!t || typeof t !== "string") return "";
+    const hh = (t.split(":")[0] || "").padStart(2,"0");
+    return hh + ":00";
+  }
+  function parseYMD(s){
+    const [y,m,d] = (s||"").split("-").map(Number);
+    if(!y || !m || !d) return null;
+    return new Date(y, m-1, d);
+  }
+  function formatHUDate(d){
+    try{
+      return new Intl.DateTimeFormat("hu-HU", { year:"numeric", month:"long", day:"2-digit", weekday:"long" }).format(d);
+    }catch{
+      return d.toISOString().slice(0,10);
+    }
+  }
+  function syncLabels(){
+    if(tTimeVal) tTimeVal.textContent = (tTime && tTime.value) ? tTime.value : "";
+    if(tDateVal){
+      if(tDate && tDate.value){
+        const d = parseYMD(tDate.value);
+        tDateVal.textContent = d ? formatHUDate(d) : tDate.value;
+      }else{
+        tDateVal.textContent = "—";
+      }
+    }
+  }
+
+  if(tTime){
+    tTime.addEventListener("input", ()=>{
+      if(!tTime.value){ syncLabels(); return; }
+      const clamped = clampToWholeHour(tTime.value);
+      if(clamped && clamped !== tTime.value) tTime.value = clamped;
+      syncLabels();
+    });
+    tTime.addEventListener("change", ()=>{
+      if(!tTime.value){ syncLabels(); return; }
+      const clamped = clampToWholeHour(tTime.value);
+      if(clamped && clamped !== tTime.value) tTime.value = clamped;
+      syncLabels();
+    });
+  }
+  if(tDate){
+    tDate.addEventListener("input", syncLabels);
+    tDate.addEventListener("change", syncLabels);
+  }
+
+  syncLabels();
+})();
+/* === End list add-task pickers logic === */
+
+
+
+
+/* === App-feel: prevent pinch zoom (best-effort, iOS Safari) === */
+(function(){
+  ["gesturestart","gesturechange","gestureend"].forEach(evt=>{
+    document.addEventListener(evt, function(e){ e.preventDefault(); }, { passive:false });
+  });
+})();
+/* === End prevent pinch zoom === */
 
 </script>
 </body>
