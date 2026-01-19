@@ -3064,19 +3064,9 @@
 
   if(cTime){
     // Only show/set time if the user actually chooses one.
-    // Enforce whole hour on any change.
-    cTime.addEventListener("input", ()=>{
-      if(!cTime.value){ syncLabels(); return; }
-      const clamped = clampToWholeHour(cTime.value);
-      if(clamped && clamped !== cTime.value) cTime.value = clamped;
-      syncLabels();
-    });
-    cTime.addEventListener("change", ()=>{
-      if(!cTime.value){ syncLabels(); return; }
-      const clamped = clampToWholeHour(cTime.value);
-      if(clamped && clamped !== cTime.value) cTime.value = clamped;
-      syncLabels();
-    });
+    // Allow minutes (no rounding).
+    cTime.addEventListener("input", syncLabels);
+    cTime.addEventListener("change", syncLabels);
   }
 
   if(cDate){
