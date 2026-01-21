@@ -87,7 +87,7 @@
     .formBody{ padding: 14px; display:flex; flex-direction:column; gap: 12px; overflow:hidden; }
 
     @media (max-width: 520px){
-      .fullPage{ padding: calc(10px + env(safe-area-inset-top)) 10px 10px; gap: 10px; }
+      .fullPage{ padding: 0 10px 10px; gap: 10px; }
       .mobileTop{ border-radius: 20px; }
       .mobileActions{ justify-content:space-between; }
       .mobileActions .seg{ order:3; width:100%; }
@@ -1096,7 +1096,7 @@
         border:0;
         background: rgba(0,0,0,0.20);
       }
-       .view{ padding: calc(14px + env(safe-area-inset-top)) 14px 14px; }
+       .view{ padding: 0 14px 14px; }
 
       .topbar{ padding:12px 12px; border-radius:0 !important; }
       .actions{ gap:8px; }
@@ -1551,7 +1551,7 @@
 
       <!-- CALENDAR VIEW -->
       <section class="view" id="view-calendar">
-        <div class="fullPage" style="padding-top: calc(12px + env(safe-area-inset-top));">
+        <div class="fullPage" style="padding-top: 0;">
           <div class="mobileTop">
             <div class="topbar" style="padding:0; border:0; background:transparent;">
               <div class="brand">
@@ -2226,7 +2226,7 @@
     }
 
     function attachLongPressHandlers(){
-      const HOLD_MS = 1550;
+      const HOLD_MS = 1000;
       paperList.querySelectorAll(".paperItem").forEach(el => {
         let timer = null;
         const id = el.getAttribute("data-id");
