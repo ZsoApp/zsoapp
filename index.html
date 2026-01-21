@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
-  <title>Adatbázis</title>
+  <title>Zsolt adatbázisa</title>
   <meta name="theme-color" content="#050608"/>
   <style>
     :root{
       --bg0:#050608;
       --bg1:#07080b;
-      --text: rgba(255,255,255,0.99);
-      --muted: rgba(255,255,255,0.65);
-      --muted2: rgba(255,255,255,0.60);
+      --text: rgba(255,255,255,0.96);
+      --muted: rgba(255,255,255,0.70);
+      --muted2: rgba(255,255,255,0.58);
       --shadow: 0 30px 80px rgba(0,0,0,0.55);
       --r3: 28px;
       --ease: cubic-bezier(.16,1,.3,1);
@@ -87,7 +87,7 @@
     .formBody{ padding: 14px; display:flex; flex-direction:column; gap: 12px; overflow:hidden; }
 
     @media (max-width: 520px){
-      .fullPage{ padding: 0 10px 10px; gap: 10px; }
+      .fullPage{ padding: calc(10px + env(safe-area-inset-top)) 10px 10px; gap: 10px; }
       .mobileTop{ border-radius: 20px; }
       .mobileActions{ justify-content:space-between; }
       .mobileActions .seg{ order:3; width:100%; }
@@ -587,10 +587,27 @@
       touch-action: manipulation;
     }
     .paperItem + .paperItem{ margin-top: 10px; }
-    .paperItem:hover{
+    .paperItem.touchHover{
       transform: translateY(-3px);
       background: rgba(255,255,255,0.03);
       border-color: rgba(255,255,255,0.12);
+    }
+    .calTask.touchHover{
+      transform: translateY(-2px);
+      background: rgba(255,255,255,0.03);
+      border-color: rgba(255,255,255,0.14);
+    }
+    @media (hover: hover) and (pointer: fine){
+      .paperItem:hover{
+        transform: translateY(-3px);
+        background: rgba(255,255,255,0.03);
+        border-color: rgba(255,255,255,0.12);
+      }
+      .calTask:hover{
+        transform: translateY(-2px);
+        background: rgba(255,255,255,0.03);
+        border-color: rgba(255,255,255,0.14);
+      }
     }
     .paperItem.done{ opacity:0.62; }
     .paperItem.done::after{
@@ -867,11 +884,7 @@
       transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease);
       flex: 0 0 auto;
     }
-    .calTask:hover{
-      transform: translateY(-2px);
-      background: rgba(255,255,255,0.03);
-      border-color: rgba(255,255,255,0.14);
-    }
+    
     .calTask .t{
       font-size: 13px;
       font-weight: 650;
@@ -1096,7 +1109,7 @@
         border:0;
         background: rgba(0,0,0,0.20);
       }
-       .view{ padding: 0 14px 14px; }
+       .view{ padding: calc(14px + env(safe-area-inset-top)) 14px 14px; }
 
       .topbar{ padding:12px 12px; border-radius:0 !important; }
       .actions{ gap:8px; }
@@ -1551,7 +1564,7 @@
 
       <!-- CALENDAR VIEW -->
       <section class="view" id="view-calendar">
-        <div class="fullPage" style="padding-top: 0;">
+        <div class="fullPage" style="padding-top: calc(12px + env(safe-area-inset-top));">
           <div class="mobileTop">
             <div class="topbar" style="padding:0; border:0; background:transparent;">
               <div class="brand">
@@ -2226,7 +2239,7 @@
     }
 
     function attachLongPressHandlers(){
-      const HOLD_MS = 1000;
+      const HOLD_MS = 3000;
       paperList.querySelectorAll(".paperItem").forEach(el => {
         let timer = null;
         const id = el.getAttribute("data-id");
@@ -3147,6 +3160,49 @@
     document.addEventListener(evt, function(e){ e.preventDefault(); }, { passive:false });
   });
 })();
+
+/* === Touch drag hover (prevents "stuck" :hover on mobile and follows finger) === */
+(function enableTouchSlideHover(){
+  let active = null;
+  let tracking = false;
+
+  function setActive(el){
+    if(active === el) return;
+    if(active) active.classList.remove("touchHover");
+    active = el;
+    if(active) active.classList.add("touchHover");
+  }
+
+  function pickAtPoint(x, y){
+    const el = document.elementFromPoint(x, y);
+    if(!el) return null;
+    return el.closest(".paperItem, .calTask");
+  }
+
+  window.addEventListener("pointerdown", (e) => {
+    if(e.pointerType !== "touch") return;
+    const target = e.target.closest(".paperItem, .calTask");
+    if(!target) return;
+    tracking = true;
+    setActive(target);
+  }, { passive: true });
+
+  window.addEventListener("pointermove", (e) => {
+    if(!tracking) return;
+    if(e.pointerType !== "touch") return;
+    const next = pickAtPoint(e.clientX, e.clientY);
+    if(next) setActive(next);
+  }, { passive: true });
+
+  function end(){
+    tracking = false;
+    setActive(null);
+  }
+  window.addEventListener("pointerup", end, { passive: true });
+  window.addEventListener("pointercancel", end, { passive: true });
+})();
+/* === End touch drag hover === */
+
 /* === End prevent pinch zoom === */
 
 </script>
