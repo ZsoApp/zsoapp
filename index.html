@@ -2240,7 +2240,7 @@
     }
 
     function attachLongPressHandlers(){
-      const HOLD_MS = 3000;
+      const HOLD_MS = 1000;
       paperList.querySelectorAll(".paperItem").forEach(el => {
         let timer = null;
         const id = el.getAttribute("data-id");
