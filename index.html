@@ -578,7 +578,7 @@
       padding: 10px 10px;
       border-radius: 18px;
       border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(0,0,0,0.14);
+      background: rgba(0,0,0,0.32);
       position:relative;
       transform: translateY(0);
       transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease);
@@ -1276,19 +1276,6 @@
 .miniGlyph{ display:inline-flex; align-items:center; justify-content:center; margin-right:8px; opacity:0.9; }
 .miniSvg{ width:16px; height:16px; }
 /* === END PATCH === */
-/* === LIST: TÖMÖR FEHÉR HATÁS (KONTRASZT FIX) === */
-
-/* 1) Lista item háttér legyen sötétebb (naptárhoz közelebb) */
-#view-list .paperItem{
-  background: rgba(0,0,0,0.32) !important;
-}
-
-/* 2) A lista panel legyen kevésbé “üveges” */
-#view-list .paperPanel{
-  background: rgba(0,0,0,0.55) !important;
-  backdrop-filter: none !important;
-}
-/* === END === */
 </style>
 </head>
 <body>
