@@ -1277,27 +1277,23 @@
 .miniGlyph{ display:inline-flex; align-items:center; justify-content:center; margin-right:8px; opacity:0.9; }
 .miniSvg{ width:16px; height:16px; }
 /* === END PATCH === */
-/* === WHITE TEXT PATCH (LIST VIEW) === */
-#view-list,
-#view-list *{
-  opacity: 1 !important;
+/* === MAKE LIST BOXES OPAQUE === */
+#view-list .paperPanel{
+  background: #050608 !important;
+  backdrop-filter: none !important;
 }
 
-#view-list .paperTitle,
-#view-list .paperMeta,
-#view-list .paperMeta *,
-#view-list .chip,
-#view-list .paperDel,
-#view-list .smallNote,
-#view-list .pill,
-#view-list .panelHead .cap,
-#view-list .panelHead .h,
-#view-list .seg button,
-#view-list .btn{
-  color: #fff !important;
-  text-shadow: none !important;
+#view-list .paperItem{
+  background: #0a0b0e !important;
+  border-color: rgba(255,255,255,0.12) !important;
 }
-/* === END PATCH === */
+
+#view-list .topbar{
+  background: #050608 !important;
+  backdrop-filter: none !important;
+}
+/* === END === */
+
 </style>
 </head>
 <body>
