@@ -1277,7 +1277,27 @@
 .miniGlyph{ display:inline-flex; align-items:center; justify-content:center; margin-right:8px; opacity:0.9; }
 .miniSvg{ width:16px; height:16px; }
 /* === END PATCH === */
+/* === WHITE TEXT PATCH (LIST VIEW) === */
+#view-list,
+#view-list *{
+  opacity: 1 !important;
+}
 
+#view-list .paperTitle,
+#view-list .paperMeta,
+#view-list .paperMeta *,
+#view-list .chip,
+#view-list .paperDel,
+#view-list .smallNote,
+#view-list .pill,
+#view-list .panelHead .cap,
+#view-list .panelHead .h,
+#view-list .seg button,
+#view-list .btn{
+  color: #fff !important;
+  text-shadow: none !important;
+}
+/* === END PATCH === */
 </style>
 </head>
 <body>
