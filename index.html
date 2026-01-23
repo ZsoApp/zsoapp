@@ -1277,23 +1277,11 @@
 .miniGlyph{ display:inline-flex; align-items:center; justify-content:center; margin-right:8px; opacity:0.9; }
 .miniSvg{ width:16px; height:16px; }
 /* === END PATCH === */
-/* === MAKE LIST BOXES OPAQUE === */
-#view-list .paperPanel{
-  background: #050608 !important;
-  backdrop-filter: none !important;
+/* Fix: lista feladatcím legyen tömör fehér (mint a naptárban) */
+#view-list .paperTitle{
+  color: #fff !important;
+  text-shadow: none !important;
 }
-
-#view-list .paperItem{
-  background: #0a0b0e !important;
-  border-color: rgba(255,255,255,0.12) !important;
-}
-
-#view-list .topbar{
-  background: #050608 !important;
-  backdrop-filter: none !important;
-}
-/* === END === */
-
 </style>
 </head>
 <body>
